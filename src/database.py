@@ -3,6 +3,7 @@ Database configuration and session management.
 """
 import os
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -14,7 +15,10 @@ DATABASE_URL = os.getenv(
     "postgresql://kanban:kanban@simple-kanban-postgres-postgresql.apps.svc.cluster.local:5432/simple_kanban"
 )
 
-# Create engine with connection pooling
+# Async database URL (for asyncpg)
+ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+
+# Create sync engine for migrations and setup
 engine = create_engine(
     DATABASE_URL,
     echo=os.getenv("DEBUG", "false").lower() == "true",
@@ -22,17 +26,40 @@ engine = create_engine(
     pool_recycle=300,
 )
 
-# Session factory
+# Create async engine for FastAPI
+async_engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    echo=os.getenv("DEBUG", "false").lower() == "true",
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
+
+# Session factories
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+)
 
 
 def get_db():
-    """Dependency to get database session."""
+    """Dependency to get sync database session."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+async def get_db_session():
+    """Dependency to get async database session."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
 def create_tables():

@@ -117,21 +117,40 @@
 
 ---
 
-### Milestone 5: Enhancement & Future Features (Week 7+)
-**Objective**: Advanced features and story planning integration
+### Milestone 5: Authentication & Multi-User Foundation (Week 7-12)
+**Objective**: Implement authentication system and multi-user support
+
+**Deliverables:**
+- Local user authentication with registration/login
+- OIDC integration for external providers
+- User group management system
+- Enhanced task collaboration features
+- Role-based access control foundation
+
+**Acceptance Criteria:**
+- ✅ Users can register and authenticate locally
+- ✅ OIDC integration with major providers working
+- ✅ Group-based board permissions functional
+- ✅ Task comments and history implemented
+- ✅ Multi-user security model established
+
+**User Stories Covered:** US-AUTH-001, US-AUTH-002, US-GROUP-001, US-TASK-001
+
+### Milestone 6: Advanced Features & Integration (Week 13+)
+**Objective**: Enhanced user experience and story planning integration
 
 **Deliverables:**
 - Keyboard shortcuts for power users
 - Story planning API integration
 - Advanced theming options
-- Multi-user support foundation
+- Real-time collaboration features
 - Performance monitoring dashboard
 
 **Acceptance Criteria:**
 - ✅ Keyboard shortcuts work as specified
 - ✅ Story planning endpoints functional
 - ✅ CSS variables enable easy theming
-- ✅ User management system ready
+- ✅ Real-time updates across multiple users
 - ✅ Performance dashboard shows metrics
 
 **User Stories Covered:** US-012, Story Planning Features

@@ -15,7 +15,7 @@ import logging
 import os
 
 from .database import create_tables
-from .api import boards, columns, tasks
+from .api import boards, columns, tasks, auth
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -40,6 +40,7 @@ app.add_middleware(
 )
 
 # Include API routers
+app.include_router(auth.router, prefix="/api")
 app.include_router(boards.router, prefix="/api")
 app.include_router(columns.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
