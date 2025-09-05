@@ -37,6 +37,7 @@ class KanbanApp {
         document.getElementById('board-modal-close').addEventListener('click', () => this.hideBoardModal());
         document.getElementById('board-cancel').addEventListener('click', () => this.hideBoardModal());
         document.getElementById('board-form').addEventListener('submit', (e) => this.handleBoardSubmit(e));
+        document.getElementById('board-delete').addEventListener('click', () => this.deleteCurrentBoard());
 
         // Task modal
         document.getElementById('task-modal-close').addEventListener('click', () => this.hideTaskModal());
@@ -81,6 +82,12 @@ class KanbanApp {
                     console.error('Error response text:', errorText);
                 }
                 throw new Error(errorMessage);
+            }
+
+            // Handle empty responses (like DELETE operations)
+            const contentType = response.headers.get('content-type');
+            if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
+                return null;
             }
 
             const data = await response.json();
@@ -503,6 +510,7 @@ class KanbanApp {
         const form = document.getElementById('board-form');
         const title = document.getElementById('board-modal-title');
         const submitBtn = document.getElementById('board-submit');
+        const deleteBtn = document.getElementById('board-delete');
         
         if (board) {
             // Edit mode
@@ -511,12 +519,14 @@ class KanbanApp {
             document.getElementById('board-name').value = board.name;
             document.getElementById('board-desc').value = board.description || '';
             form.dataset.boardId = board.id; // Store board ID for editing
+            deleteBtn.style.display = 'block'; // Show delete button in edit mode
         } else {
             // Create mode
             title.textContent = 'Create New Board';
             submitBtn.textContent = 'Create Board';
             form.reset();
             delete form.dataset.boardId; // Remove board ID for new boards
+            deleteBtn.style.display = 'none'; // Hide delete button in create mode
         }
         
         modal.classList.add('show');
@@ -573,6 +583,44 @@ class KanbanApp {
     async editCurrentBoard() {
         if (this.currentBoard) {
             this.showBoardModal(this.currentBoard);
+        }
+    }
+
+    async deleteCurrentBoard() {
+        if (!this.currentBoard) return;
+        
+        const boardName = this.currentBoard.name;
+        const confirmMessage = `Are you sure you want to delete the board "${boardName}"?\n\nThis action cannot be undone and will delete all columns and tasks in this board.`;
+        
+        if (!confirm(confirmMessage)) return;
+        
+        try {
+            await this.apiCall(`/boards/${this.currentBoard.id}`, {
+                method: 'DELETE'
+            });
+            
+            this.hideBoardModal();
+            this.currentBoard = null;
+            
+            // Remove deleted board from localStorage
+            localStorage.removeItem('selectedBoardId');
+            
+            // Reload boards list
+            await this.loadBoards();
+            
+            // If there are remaining boards, select the first one
+            if (this.boards.length > 0) {
+                await this.selectBoard(this.boards[0].id);
+            } else {
+                // No boards left, show empty state
+                this.showEmptyState();
+            }
+            
+            this.showNotification(`Board "${boardName}" deleted successfully!`);
+            
+        } catch (error) {
+            console.error('Failed to delete board:', error);
+            this.showNotification('Failed to delete board. Please try again.', 'error');
         }
     }
 

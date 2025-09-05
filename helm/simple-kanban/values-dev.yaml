@@ -2,8 +2,15 @@
 replicaCount: 1
 
 image:
+  repository: registry.stormpath.net/simple-kanban
   tag: "latest"
   pullPolicy: Always
+
+# Use ClusterIP with ingress
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
 
 resources:
   limits:
@@ -13,17 +20,22 @@ resources:
     cpu: 50m
     memory: 64Mi
 
-# Enable ingress for local development
+# Enable ingress for kanban.stormpath.dev
 ingress:
   enabled: true
   className: "nginx"
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts:
-    - host: simple-kanban.local
+    - host: kanban.stormpath.dev
       paths:
         - path: /
           pathType: Prefix
+  tls:
+    - secretName: stormpath-wildcard-tls
+      hosts:
+        - kanban.stormpath.dev
 
 # Development environment variables
 env:

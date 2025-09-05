@@ -17,8 +17,6 @@ deploy:
       namespace: apps
       valuesFiles:
       - helm/simple-kanban/values-dev.yaml
-      setValues:
-        image.repository: registry.stormpath.net/simple-kanban
 portForward:
 - resourceType: service
   resourceName: simple-kanban
@@ -34,8 +32,6 @@ profiles:
         namespace: apps
         valuesFiles:
         - helm/simple-kanban/values-dev.yaml
-        setValues:
-          image.repository: registry.stormpath.net/simple-kanban
 - name: prod
   deploy:
     helm:

@@ -93,8 +93,16 @@
                     <textarea id="board-desc" name="description" placeholder="Enter board description"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="board-cancel">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="board-submit">Create Board</button>
+                    <div class="modal-actions-left">
+                        <button type="button" class="btn btn-danger" id="board-delete" style="display: none;">
+                            <i class="fas fa-trash"></i>
+                            Delete Board
+                        </button>
+                    </div>
+                    <div class="modal-actions-right">
+                        <button type="button" class="btn btn-secondary" id="board-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="board-submit">Create Board</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -138,6 +146,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=1725518499"></script>
 </body>
 </html>
