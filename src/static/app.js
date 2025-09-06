@@ -314,6 +314,23 @@ class KanbanApp {
         }
     }
 
+    // Always fetch fresh board data from API
+    async refreshBoardData() {
+        if (!this.currentBoard) return;
+        
+        try {
+            Debug.log('Refreshing board data from API...');
+            const board = await this.apiCall(`/boards/${this.currentBoard.id}`);
+            this.currentBoard = board; // Update current board with fresh data
+            await this.processBoardData(board);
+            this.renderBoard();
+            Debug.log('Board data refreshed and rendered');
+        } catch (error) {
+            Debug.error('Failed to refresh board data:', error);
+            throw error;
+        }
+    }
+
     renderBoard() {
         Debug.log('renderBoard() called');
         Debug.log('Current board:', this.currentBoard);
@@ -513,15 +530,8 @@ class KanbanApp {
                 })
             });
             
-            // Update local data
-            const task = this.tasks.find(t => t.id === taskId);
-            if (task) {
-                task.column_id = newColumnId;
-                task.position = newPosition;
-            }
-            
-            // Re-render the board
-            this.renderBoard();
+            // Refresh board data to reflect the move
+            await this.refreshBoardData();
             this.showNotification('Task moved successfully!');
             
         } catch (error) {
@@ -592,7 +602,8 @@ class KanbanApp {
             }
             
             this.hideTaskModal();
-            await this.loadBoardData();
+            // Refresh board data to show the new/updated task
+            await this.refreshBoardData();
             
         } catch (error) {
             Debug.error('Failed to save task:', error);
@@ -614,8 +625,8 @@ class KanbanApp {
                 method: 'DELETE'
             });
             
-            this.tasks = this.tasks.filter(t => t.id !== parseInt(taskId));
-            this.renderBoard();
+            // Refresh board data to reflect the deletion
+            await this.refreshBoardData();
             this.showNotification('Task deleted successfully!');
             
         } catch (error) {
