@@ -22,7 +22,7 @@ import logging
 import os
 
 from .database import create_tables
-from .api import boards, columns, tasks, auth, oidc
+from .api import boards, columns, tasks, auth, oidc, task_comments
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -60,6 +60,7 @@ app.include_router(oidc.router, prefix="/api")
 app.include_router(boards.router, prefix="/api")
 app.include_router(columns.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
+app.include_router(task_comments.router, prefix="/api")
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

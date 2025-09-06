@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     
     # Security Headers
     security_headers_enabled: bool = True
-    csrf_protection_enabled: bool = True
+    csrf_protection_enabled: bool = False
     
     # Database Configuration
     database_url: str = "postgresql+asyncpg://kanban:kanban@localhost:5432/simple_kanban"

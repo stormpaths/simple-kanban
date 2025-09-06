@@ -20,6 +20,7 @@ class Task(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     
     # Foreign key to column
@@ -30,6 +31,7 @@ class Task(Base, TimestampMixin):
     
     # Relationships
     column: Mapped["Column"] = relationship("Column", back_populates="tasks")
+    comments: Mapped[list["TaskComment"]] = relationship("TaskComment", back_populates="task", cascade="all, delete-orphan")
     
     @property
     def status(self) -> str:

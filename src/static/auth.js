@@ -274,7 +274,10 @@ class AuthManager {
 
     logout() {
         this.clearAuth();
-        this.closeUserMenu();
+        // Reset to light mode on logout for new visitors
+        if (window.themeManager) {
+            window.themeManager.applyTheme('light');
+        }
         this.showNotification('Logged out successfully', 'success');
         this.showAuthScreen();
     }

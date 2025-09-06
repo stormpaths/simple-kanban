@@ -32,6 +32,7 @@ class User(Base, TimestampMixin):
     
     # Relationships
     boards: Mapped[List["Board"]] = relationship("Board", back_populates="owner", cascade="all, delete-orphan")
+    task_comments: Mapped[List["TaskComment"]] = relationship("TaskComment", back_populates="author", cascade="all, delete-orphan")
     # Future relationships for OIDC providers and groups
     # oidc_providers: Mapped[List["OIDCProvider"]] = relationship("OIDCProvider", back_populates="user")
     # user_groups: Mapped[List["UserGroup"]] = relationship("UserGroup", back_populates="user")

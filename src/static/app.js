@@ -62,7 +62,8 @@ class KanbanApp {
             let response;
             
             // Use authenticated fetch if auth manager is available
-            if (this.authManager) {
+            if (this.authManager && this.authManager.token) {
+                Debug.log('Using authenticated fetch with token:', this.authManager.token ? 'present' : 'missing');
                 response = await this.authManager.authenticatedFetch(`/api${endpoint}`, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -71,6 +72,7 @@ class KanbanApp {
                     ...options
                 });
             } else {
+                Debug.log('Using fallback fetch - authManager:', !!this.authManager, 'token:', this.authManager?.token ? 'present' : 'missing');
                 // Fallback to regular fetch with credentials
                 response = await fetch(`/api${endpoint}`, {
                     credentials: 'include',
@@ -394,16 +396,13 @@ class KanbanApp {
         const daysOpen = this.calculateDaysOpen(task.created_at);
         
         return `
-            <div class="task-card" draggable="true" data-task-id="${task.id}">
+            <div class="task-card clickable" draggable="true" data-task-id="${task.id}">
                 <div class="task-title">${this.escapeHtml(task.title)}</div>
                 ${task.description ? `<div class="task-description">${this.escapeHtml(task.description)}</div>` : ''}
                 <div class="task-meta">
                     <span>Created: ${createdDate}</span>
                     <span class="days-open ${this.getDaysOpenClass(daysOpen)}">${daysOpen}</span>
                     <div class="task-actions">
-                        <button class="task-action edit" data-task-id="${task.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
                         <button class="task-action delete" data-task-id="${task.id}">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -453,16 +452,17 @@ class KanbanApp {
         taskCard.addEventListener('dragstart', this.handleDragStart.bind(this));
         taskCard.addEventListener('dragend', this.handleDragEnd.bind(this));
         
-        // Add task action listeners
-        const editBtn = taskCard.querySelector('.task-action.edit');
-        const deleteBtn = taskCard.querySelector('.task-action.delete');
+        // Add click listener to open edit modal
+        taskCard.addEventListener('click', (e) => {
+            // Don't trigger if clicking on action buttons
+            if (e.target.closest('.task-action')) {
+                return;
+            }
+            this.editTask(taskCard.dataset.taskId);
+        });
         
-        if (editBtn) {
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.editTask(taskCard.dataset.taskId);
-            });
-        }
+        // Add task action listeners
+        const deleteBtn = taskCard.querySelector('.task-action.delete');
         
         if (deleteBtn) {
             deleteBtn.addEventListener('click', (e) => {
@@ -544,25 +544,31 @@ class KanbanApp {
     showTaskModal(columnId = null, task = null) {
         const modal = document.getElementById('task-modal');
         const form = document.getElementById('task-form');
-        const title = document.getElementById('task-modal-title');
         const submitBtn = document.getElementById('task-submit');
         
         if (task) {
             // Edit mode
-            title.textContent = 'Edit Task';
             submitBtn.textContent = 'Update Task';
             document.getElementById('task-title').value = task.title;
             document.getElementById('task-desc').value = task.description || '';
             document.getElementById('task-id').value = task.id;
             document.getElementById('task-column-id').value = task.column_id;
+            
+            // Load comments for this task
+            this.loadTaskComments(task.id);
         } else {
             // Create mode
-            title.textContent = 'Create New Task';
             submitBtn.textContent = 'Create Task';
             form.reset();
             document.getElementById('task-column-id').value = columnId;
             document.getElementById('task-id').value = '';
+            
+            // Clear comments section
+            this.clearComments();
         }
+        
+        // Setup comment form event listener
+        this.setupCommentForm();
         
         modal.classList.add('show');
     }
@@ -607,6 +613,178 @@ class KanbanApp {
             
         } catch (error) {
             Debug.error('Failed to save task:', error);
+        }
+    }
+
+    // Comment Management
+    async loadTaskComments(taskId) {
+        try {
+            const response = await this.apiCall(`/tasks/${taskId}/comments`);
+            this.renderComments(response.comments || []);
+        } catch (error) {
+            Debug.error('Failed to load comments:', error);
+            this.renderComments([]);
+        }
+    }
+
+    renderComments(comments) {
+        const commentsList = document.getElementById('comments-list');
+        
+        if (!comments || comments.length === 0) {
+            commentsList.innerHTML = '<div class="comments-empty">No comments yet</div>';
+            return;
+        }
+
+        commentsList.innerHTML = comments.map(comment => {
+            const date = new Date(comment.created_at).toLocaleString();
+            return `
+                <div class="comment-item" data-comment-id="${comment.id}">
+                    <div class="comment-header">
+                        <span class="comment-author">${this.escapeHtml(comment.author_name)}</span>
+                        <span class="comment-date">${date}</span>
+                    </div>
+                    <div class="comment-content">${this.escapeHtml(comment.content)}</div>
+                    <div class="comment-actions">
+                        <button class="comment-action edit-comment" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="comment-action delete-comment" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add event listeners for comment actions
+        this.setupCommentActions();
+    }
+
+    setupCommentForm() {
+        const addBtn = document.getElementById('add-comment-btn');
+        const newCommentTextarea = document.getElementById('new-comment');
+        
+        // Remove existing listeners
+        addBtn.replaceWith(addBtn.cloneNode(true));
+        const newAddBtn = document.getElementById('add-comment-btn');
+        
+        newAddBtn.addEventListener('click', async () => {
+            const content = newCommentTextarea.value.trim();
+            if (!content) return;
+            
+            const taskId = document.getElementById('task-id').value;
+            if (!taskId) return;
+            
+            try {
+                await this.apiCall(`/tasks/${taskId}/comments`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        content: content,
+                        task_id: parseInt(taskId)
+                    })
+                });
+                
+                newCommentTextarea.value = '';
+                await this.loadTaskComments(taskId);
+                this.showNotification('Comment added successfully!');
+            } catch (error) {
+                Debug.error('Failed to add comment:', error);
+                this.showNotification('Failed to add comment. Please try again.', 'error');
+            }
+        });
+
+        // Allow Enter+Ctrl to submit comment
+        newCommentTextarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                newAddBtn.click();
+            }
+        });
+    }
+
+    setupCommentActions() {
+        const commentsList = document.getElementById('comments-list');
+        
+        commentsList.addEventListener('click', async (e) => {
+            const commentItem = e.target.closest('.comment-item');
+            if (!commentItem) return;
+            
+            const commentId = commentItem.dataset.commentId;
+            
+            if (e.target.closest('.edit-comment')) {
+                await this.editComment(commentId, commentItem);
+            } else if (e.target.closest('.delete-comment')) {
+                await this.deleteComment(commentId);
+            }
+        });
+    }
+
+    async editComment(commentId, commentItem) {
+        const contentDiv = commentItem.querySelector('.comment-content');
+        const originalContent = contentDiv.textContent;
+        
+        // Replace content with textarea
+        contentDiv.innerHTML = `
+            <textarea class="edit-comment-textarea" style="width: 100%; min-height: 60px; resize: vertical;">${originalContent}</textarea>
+            <div style="margin-top: 0.5rem;">
+                <button class="btn btn-primary save-comment" style="margin-right: 0.5rem;">Save</button>
+                <button class="btn btn-secondary cancel-edit">Cancel</button>
+            </div>
+        `;
+        
+        const textarea = contentDiv.querySelector('.edit-comment-textarea');
+        const saveBtn = contentDiv.querySelector('.save-comment');
+        const cancelBtn = contentDiv.querySelector('.cancel-edit');
+        
+        textarea.focus();
+        
+        saveBtn.addEventListener('click', async () => {
+            const newContent = textarea.value.trim();
+            if (!newContent) return;
+            
+            try {
+                await this.apiCall(`/tasks/comments/${commentId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ content: newContent })
+                });
+                
+                const taskId = document.getElementById('task-id').value;
+                await this.loadTaskComments(taskId);
+                this.showNotification('Comment updated successfully!');
+            } catch (error) {
+                Debug.error('Failed to update comment:', error);
+                this.showNotification('Failed to update comment. Please try again.', 'error');
+            }
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            contentDiv.innerHTML = this.escapeHtml(originalContent);
+        });
+    }
+
+    async deleteComment(commentId) {
+        if (!confirm('Are you sure you want to delete this comment?')) return;
+        
+        try {
+            await this.apiCall(`/tasks/comments/${commentId}`, {
+                method: 'DELETE'
+            });
+            
+            const taskId = document.getElementById('task-id').value;
+            await this.loadTaskComments(taskId);
+            this.showNotification('Comment deleted successfully!');
+        } catch (error) {
+            Debug.error('Failed to delete comment:', error);
+            this.showNotification('Failed to delete comment. Please try again.', 'error');
+        }
+    }
+
+    clearComments() {
+        const commentsList = document.getElementById('comments-list');
+        commentsList.innerHTML = '<div class="comments-empty">No comments yet</div>';
+        
+        const newCommentTextarea = document.getElementById('new-comment');
+        if (newCommentTextarea) {
+            newCommentTextarea.value = '';
         }
     }
 

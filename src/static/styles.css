@@ -5,20 +5,65 @@
     box-sizing: border-box;
 }
 
+/* CSS Variables for Theme */
+:root {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f8fafc;
+    --text-primary: #333333;
+    --text-secondary: #6b7280;
+    --text-tertiary: #1f2937;
+    --border-primary: #e5e7eb;
+    --border-secondary: #e2e8f0;
+    --accent-primary: #4f46e5;
+    --accent-hover: #4338ca;
+    --gradient-start: #667eea;
+    --gradient-end: #764ba2;
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    --shadow-medium: rgba(0, 0, 0, 0.15);
+    --backdrop-blur: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #3a3a3a;
+    --text-primary: #ffffff;
+    --text-secondary: #c4c4c7;
+    --text-tertiary: #e5e7eb;
+    --border-primary: #404040;
+    --border-secondary: #525252;
+    --accent-primary: #6366f1;
+    --accent-hover: #4f46e5;
+    --gradient-start: #4c1d95;
+    --gradient-end: #1e1b4b;
+    --shadow-light: rgba(0, 0, 0, 0.3);
+    --shadow-medium: rgba(0, 0, 0, 0.5);
+    --backdrop-blur: rgba(45, 45, 45, 0.95);
+}
+
 /* Authentication Styles */
 .auth-screen {
-    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 20px;
+    padding: 1rem;
+}
+
+.auth-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 0.5rem;
 }
 
 .auth-container {
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 12px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 40px var(--shadow-light);
     padding: 40px;
     width: 100%;
     max-width: 420px;
@@ -42,7 +87,7 @@
 }
 
 .auth-title {
-    color: #2c3e50;
+    color: var(--text-tertiary);
     font-size: 28px;
     font-weight: 700;
     margin-bottom: 8px;
@@ -258,14 +303,15 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: #f8f9fa;
+    background: var(--bg-primary);
     min-height: 100vh;
-    color: #333;
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Main app background when authenticated */
 .main-app {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
     min-height: 100vh;
 }
 
@@ -277,13 +323,35 @@ body {
 
 /* Header */
 .header {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--backdrop-blur);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid var(--border-primary);
     padding: 1rem 0;
     position: sticky;
     top: 0;
     z-index: 100;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-primary);
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
+
+.theme-toggle:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
 }
 
 .header-content {
@@ -299,7 +367,7 @@ body {
 .app-title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #4f46e5;
+    color: var(--accent-primary);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -439,11 +507,11 @@ body {
 
 /* Kanban Board */
 .kanban-board {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--backdrop-blur);
     border-radius: 12px;
     padding: 2rem;
     backdrop-filter: blur(10px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 25px -5px var(--shadow-light);
 }
 
 .board-header {
@@ -457,29 +525,36 @@ body {
 
 .board-info h2 {
     font-size: 1.5rem;
-    color: #1f2937;
+    color: var(--text-tertiary);
     margin-bottom: 0.5rem;
 }
 
 .board-info p {
-    color: #6b7280;
+    color: var(--text-secondary);
     font-size: 0.875rem;
 }
 
 /* Columns Container */
 .columns-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    display: flex;
     gap: 1.5rem;
     min-height: 500px;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.columns-container > .column {
+    flex: 1;
+    min-width: 320px;
+    max-width: 400px;
 }
 
 /* Column */
 .column {
-    background: #f8fafc;
+    background: var(--bg-tertiary);
     border-radius: 8px;
     padding: 1rem;
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--border-secondary);
     transition: all 0.2s;
 }
 
@@ -499,7 +574,7 @@ body {
 
 .column-title {
     font-weight: 600;
-    color: #1f2937;
+    color: var(--text-tertiary);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -538,13 +613,116 @@ body {
 }
 
 .task-card {
-    background: white;
+    background: var(--bg-secondary);
     border-radius: 6px;
     padding: 1rem;
-    border: 1px solid #e5e7eb;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-primary);
+    transition: all 0.2s ease;
     cursor: grab;
-    transition: all 0.2s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px var(--shadow-light);
+    min-width: 280px;
+    width: 100%;
+}
+
+.task-card.clickable {
+    cursor: pointer;
+}
+
+/* Comments Section */
+#comments-section {
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+#comments-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.comment-item {
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.comment-author {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.comment-date {
+    color: var(--text-tertiary);
+}
+
+.comment-content {
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.comment-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: none;
+}
+
+.comment-item:hover .comment-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.comment-action {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.comment-action:hover {
+    background: var(--background-hover);
+    color: var(--text-primary);
+}
+
+.comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comment-form textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.comment-form button {
+    align-self: flex-end;
+    padding: 0.5rem 1rem;
+}
+
+.comments-empty {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-style: italic;
+    padding: 1rem;
 }
 
 .task-card:hover {
@@ -560,16 +738,17 @@ body {
 
 .task-title {
     font-weight: 500;
-    color: #1f2937;
+    color: var(--text-tertiary);
     margin-bottom: 0.5rem;
     line-height: 1.4;
 }
 
 .task-description {
-    color: #6b7280;
+    color: var(--text-secondary);
     font-size: 0.875rem;
     line-height: 1.4;
     margin-bottom: 0.75rem;
+    white-space: pre-wrap;
 }
 
 .task-meta {
@@ -578,7 +757,7 @@ body {
     align-items: center;
     margin-top: 8px;
     font-size: 0.8em;
-    color: #666;
+    color: var(--text-secondary);
     flex-wrap: wrap;
     gap: 8px;
 }
@@ -657,10 +836,10 @@ body {
 }
 
 .modal-content {
-    background: white;
+    background: var(--bg-tertiary);
     border-radius: 12px;
     padding: 0;
-    max-width: 500px;
+    max-width: 700px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
@@ -670,20 +849,30 @@ body {
 .modal-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
+    align-items: flex-start;
+    padding: 1rem 1.5rem 0.5rem;
+    border-bottom: none;
+}
+
+.modal-title-group {
+    flex: 1;
+    margin: 0;
+    margin-right: 1rem;
+}
+
+.modal-title-group label {
+    margin-bottom: 0.5rem;
 }
 
 .modal-header h3 {
     font-size: 1.25rem;
-    color: #1f2937;
+    color: var(--text-tertiary);
 }
 
 .modal-close {
     background: none;
     border: none;
-    color: #6b7280;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 4px;
@@ -692,7 +881,7 @@ body {
 
 .modal-close:hover {
     color: #ef4444;
-    background: #fef2f2;
+    background: var(--bg-secondary);
 }
 
 /* Forms */
@@ -701,24 +890,30 @@ form {
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.modal-title-group {
+    margin-bottom: 0.75rem;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    color: #374151;
+    color: var(--text-primary);
 }
 
 .form-group input,
 .form-group textarea {
     width: 100%;
     padding: 0.75rem;
-    border: 2px solid #e5e7eb;
+    border: 2px solid var(--border-color);
     border-radius: 6px;
     font-size: 0.875rem;
     transition: border-color 0.2s;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 .form-group input:focus,
@@ -729,7 +924,7 @@ form {
 
 .form-group textarea {
     resize: vertical;
-    min-height: 80px;
+    min-height: 120px;
 }
 
 .modal-actions {
@@ -755,7 +950,7 @@ form {
     position: fixed;
     top: 1rem;
     right: 1rem;
-    background: white;
+    background: var(--bg-primary);
     border-radius: 8px;
     padding: 1rem;
     box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
@@ -763,6 +958,7 @@ form {
     z-index: 1001;
     transform: translateX(400px);
     transition: transform 0.3s ease-out;
+    color: var(--text-primary);
 }
 
 .notification.show {
@@ -833,8 +1029,13 @@ form {
     }
 
     .columns-container {
-        grid-template-columns: 1fr;
+        flex-direction: row;
         gap: 1rem;
+    }
+    
+    .columns-container > .column {
+        min-width: 200px;
+        max-width: none;
     }
 
     .modal-content {
