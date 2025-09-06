@@ -10,6 +10,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from .schemas import HealthResponse, MessageRequest, MessageResponse
+from .core.config import settings
+from .middleware import (
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    CSRFProtectionMiddleware,
+    setup_redis_client
+)
 from typing import Dict, Any
 import logging
 import os
@@ -30,12 +37,20 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Setup Redis client for rate limiting
+redis_client = setup_redis_client()
+
+# Add security middleware (order matters - add from innermost to outermost)
+app.add_middleware(CSRFProtectionMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, redis_client=redis_client)
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=settings.backend_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

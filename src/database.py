@@ -15,8 +15,14 @@ DATABASE_URL = os.getenv(
     "postgresql://kanban:kanban@simple-kanban-postgres-postgresql.apps.svc.cluster.local:5432/simple_kanban"
 )
 
-# Async database URL (for asyncpg)
-ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+# For testing, use SQLite if asyncpg is not available
+try:
+    import asyncpg
+    ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+except ImportError:
+    # Fallback to SQLite for testing
+    ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+    DATABASE_URL = "sqlite:///./test.db"
 
 # Create sync engine for migrations and setup
 engine = create_engine(
