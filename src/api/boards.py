@@ -8,6 +8,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from ..database import get_db_session
 from ..models.board import Board
@@ -16,6 +17,7 @@ from ..models.task import Task
 from ..models.user import User
 from ..schemas import BoardCreate, BoardResponse, BoardUpdate, BoardWithColumnsResponse, ColumnWithTasksResponse
 from ..auth.dependencies import get_current_user
+from ..utils.sql import get_sql_builder
 
 
 async def _get_accessible_owner_ids(db: AsyncSession, user: User) -> List[int]:
@@ -27,14 +29,11 @@ async def _get_accessible_owner_ids(db: AsyncSession, user: User) -> List[int]:
     - Any other user IDs that should be accessible (temporary for testing)
     - Will be extended in the future to include group membership
     """
-    # Always include the current user's ID
     accessible_ids = [user.id]
     
-    # For now, include user ID 6 for testing purposes
-    # TODO: Replace this with proper group-based access control
-    if user.id != 6:
-        accessible_ids.append(6)
-    if user.id != 8:
+    # For testing purposes, allow access to user ID 8 as well
+    # This will be replaced with proper group membership logic later
+    if user.id == 6:
         accessible_ids.append(8)
     
     # TODO: When groups are implemented, add group IDs here:
@@ -44,7 +43,6 @@ async def _get_accessible_owner_ids(db: AsyncSession, user: User) -> List[int]:
     # group_ids = [row[0] for row in group_result.fetchall()]
     # accessible_ids.extend(group_ids)
     
-    print(f"User {user.id} can access boards with owner_ids: {accessible_ids}")
     return accessible_ids
 
 
@@ -134,7 +132,6 @@ async def get_board(
         )
     
     # Get the board with columns and tasks in a single query
-    from sqlalchemy.orm import selectinload
     
     result = await db.execute(
         select(Board)
