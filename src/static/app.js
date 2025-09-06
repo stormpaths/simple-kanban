@@ -671,6 +671,10 @@ class KanbanApp {
         newAddBtn.addEventListener('click', async () => {
             const content = newCommentTextarea.value.trim();
             if (!content) return;
+            if (content.length > 2000) {
+                alert('Comment is too long. Maximum 2000 characters allowed.');
+                return;
+            }
             
             const taskId = document.getElementById('task-id').value;
             if (!taskId) return;
@@ -784,7 +788,12 @@ class KanbanApp {
         
         const newCommentTextarea = document.getElementById('new-comment');
         if (newCommentTextarea) {
-            newCommentTextarea.value = '';
+            const commentText = newCommentTextarea.value.trim();
+            if (commentText.length > 2000) {
+                alert('Comment is too long. Maximum 2000 characters allowed.');
+            } else {
+                newCommentTextarea.value = '';
+            }
         }
     }
 

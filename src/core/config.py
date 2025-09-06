@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     
     # Security Configuration
     jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "")
-    jwt_access_token_expire_minutes: int = 15
+    jwt_access_token_expire_minutes: int = 1440  # 24 hours
     jwt_refresh_token_expire_days: int = 7
     session_secret_key: str = os.getenv("SESSION_SECRET_KEY", "")
     session_cookie_secure: bool = os.getenv("ENVIRONMENT", "development") == "production"
