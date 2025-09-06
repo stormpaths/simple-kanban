@@ -100,16 +100,17 @@ with engine.connect() as conn:
     if not alembic_exists:
         print('Creating alembic_version table')
         conn.execute(text('CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)'))
-        conn.execute(text('INSERT INTO alembic_version (version_num) VALUES (\'002\')'))
+        conn.execute(text('INSERT INTO alembic_version (version_num) VALUES (\'001\')'))
         conn.commit()
-    else:
-        # Update to latest version if we manually added columns
-        if users_exists:
-            conn.execute(text('UPDATE alembic_version SET version_num = \'002\''))
-            conn.commit()
+    
+    # Always run migrations to ensure we're at the latest version
+    print('Current alembic version:', conn.execute(text('SELECT version_num FROM alembic_version')).scalar())
 "
 
-# Run alembic upgrade (should be a no-op if we're already at latest version)
+# Set DATABASE_URL for alembic
+export DATABASE_URL="postgresql://kanban:kanban@simple-kanban-postgres-postgresql.apps.svc.cluster.local:5432/simple_kanban"
+
+# Run alembic upgrade to ensure all migrations are applied
 echo "Running alembic upgrade..."
 alembic upgrade head
 

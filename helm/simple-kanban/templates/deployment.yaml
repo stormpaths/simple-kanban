@@ -65,11 +65,18 @@ spec:
               mountPath: /tmp
             - name: var-cache
               mountPath: /var/cache
+            - name: google-oauth-secret
+              mountPath: /var/secrets/kanban
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir: {}
         - name: var-cache
           emptyDir: {}
+        - name: google-oauth-secret
+          secret:
+            secretName: {{ .Values.oidc.googleOAuthSecret | default "google-oauth-json" }}
+            optional: true
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

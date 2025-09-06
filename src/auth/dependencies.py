@@ -2,7 +2,7 @@
 Authentication dependencies for FastAPI endpoints.
 """
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,18 +10,20 @@ from ..database import get_db_session
 from ..models.user import User
 from .jwt_handler import jwt_handler
 
-# HTTP Bearer token scheme
-security = HTTPBearer()
+# HTTP Bearer token scheme (auto_error=False to make it optional)
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_db_session)
 ) -> User:
     """
-    Get the current authenticated user from JWT token.
+    Get the current authenticated user from JWT token or cookie.
     
-    Raises HTTPException if token is invalid or user not found.
+    Supports both Bearer token authentication and cookie-based authentication.
+    Raises HTTPException if no valid authentication found.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -29,15 +31,25 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    # Verify token
-    token_data = jwt_handler.verify_token(credentials.credentials)
-    if token_data is None:
-        raise credentials_exception
+    user = None
     
-    # Get user from database
-    from sqlalchemy import select
-    result = await db.execute(select(User).where(User.id == token_data.user_id))
-    user = result.scalar_one_or_none()
+    # Try Bearer token authentication first
+    if credentials:
+        token_data = jwt_handler.verify_token(credentials.credentials)
+        if token_data:
+            from sqlalchemy import select
+            result = await db.execute(select(User).where(User.id == token_data.user_id))
+            user = result.scalar_one_or_none()
+    
+    # Try cookie authentication if Bearer token failed
+    if not user:
+        access_token = request.cookies.get("access_token")
+        if access_token:
+            token_data = jwt_handler.verify_token(access_token)
+            if token_data:
+                from sqlalchemy import select
+                result = await db.execute(select(User).where(User.id == token_data.user_id))
+                user = result.scalar_one_or_none()
     
     if user is None:
         raise credentials_exception

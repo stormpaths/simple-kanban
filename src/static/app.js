@@ -11,13 +11,11 @@ class KanbanApp {
         this.columns = [];
         this.tasks = [];
         this.draggedTask = null;
-        
-        console.log('Calling init()...');
-        this.init();
+        this.authManager = window.authManager;
     }
 
     async init() {
-        console.log('init() called');
+        console.log('init() called - authenticated user');
         this.bindEvents();
         console.log('Events bound, loading boards...');
         await this.loadBoards();
@@ -60,16 +58,32 @@ class KanbanApp {
     async apiCall(endpoint, options = {}) {
         try {
             console.log('Making API call to:', `/api${endpoint}`, options);
-            const response = await fetch(`/api${endpoint}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                },
-                ...options
-            });
-
-            console.log('API Response status:', response.status, response.statusText);
-
+            
+            let response;
+            
+            // Use authenticated fetch if auth manager is available
+            if (this.authManager) {
+                response = await this.authManager.authenticatedFetch(`/api${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+            } else {
+                // Fallback to regular fetch with credentials
+                response = await fetch(`/api${endpoint}`, {
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+            }
+            
+            console.log('API Response status:', response.status, response.statusText, 'for endpoint:', endpoint);
+            
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}`;
                 try {
@@ -83,13 +97,13 @@ class KanbanApp {
                 }
                 throw new Error(errorMessage);
             }
-
+            
             // Handle empty responses (like DELETE operations)
             const contentType = response.headers.get('content-type');
             if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
                 return null;
             }
-
+            
             const data = await response.json();
             console.log('API Response data:', data);
             return data;
@@ -104,8 +118,24 @@ class KanbanApp {
     async loadBoards() {
         try {
             console.log('Loading boards...');
-            this.boards = await this.apiCall('/boards/');
+            const response = await this.apiCall('/boards/');
+            console.log('Boards API response:', response);
+            
+            // Ensure we have an array
+            this.boards = Array.isArray(response) ? response : [];
             console.log('Boards loaded:', this.boards);
+            
+            // Debug: Check if boards array is empty
+            if (this.boards.length === 0) {
+                console.warn('No boards found in the array');
+            } else {
+                console.log(`Found ${this.boards.length} boards`);
+                this.boards.forEach((board, index) => {
+                    console.log(`Board ${index + 1}:`, board);
+                });
+            }
+            
+            // Update the board selector dropdown
             this.updateBoardSelector();
             
             if (this.boards.length === 0) {
@@ -130,53 +160,119 @@ class KanbanApp {
                 }
                 
                 // Always select the determined board (either saved or first)
-                console.log('Selecting board:', boardToSelect.id);
-                await this.selectBoard(boardToSelect.id);
+                console.log('Selecting board:', boardToSelect);
+                if (boardToSelect && boardToSelect.id) {
+                    console.log('Calling selectBoard with id:', boardToSelect.id);
+                    await this.selectBoard(boardToSelect.id);
+                } else {
+                    console.error('Invalid board to select:', boardToSelect);
+                }
             }
         } catch (error) {
             console.error('Error loading boards:', error);
+            // Initialize boards as empty array on error
+            this.boards = [];
             this.showEmptyState();
         }
     }
 
     updateBoardSelector() {
+        console.log('updateBoardSelector() called');
+        console.log('Current boards array:', this.boards);
+        
         const select = document.getElementById('board-select');
+        if (!select) {
+            console.error('Board select element not found!');
+            return;
+        }
+        
+        // Clear existing options
         select.innerHTML = '<option value="">Select a board...</option>';
         
-        this.boards.forEach(board => {
+        // Ensure boards is an array before using forEach
+        if (!Array.isArray(this.boards)) {
+            console.error('this.boards is not an array:', this.boards);
+            return;
+        }
+        
+        console.log(`Adding ${this.boards.length} boards to selector`);
+        this.boards.forEach((board, index) => {
+            console.log(`Adding board ${index + 1}:`, board);
             const option = document.createElement('option');
             option.value = board.id;
-            option.textContent = board.name;
+            option.textContent = board.name || `Untitled Board ${board.id}`;
             select.appendChild(option);
         });
+        
+        console.log('Updated board selector with options:', select.innerHTML);
     }
 
     async selectBoard(boardId) {
-        if (!boardId) return;
+        console.log('selectBoard() called with boardId:', boardId);
+        if (!boardId) {
+            console.warn('No boardId provided to selectBoard');
+            return;
+        }
         
         try {
             this.showLoading();
-            this.currentBoard = await this.apiCall(`/boards/${boardId}`);
-            document.getElementById('board-select').value = boardId;
+            console.log('Fetching board details for ID:', boardId);
+            const board = await this.apiCall(`/boards/${boardId}`);
+            console.log('Received board details:', board);
+            
+            if (!board) {
+                throw new Error('No board data returned from API');
+            }
+            
+            this.currentBoard = board;
+            console.log('Current board set to:', this.currentBoard);
+            
+            // Update the board selector
+            const boardSelect = document.getElementById('board-select');
+            if (boardSelect) {
+                boardSelect.value = boardId;
+                console.log('Updated board select element value to:', boardId);
+            } else {
+                console.warn('Board select element not found');
+            }
             
             // Save selected board to localStorage
             localStorage.setItem('selectedBoardId', boardId);
+            console.log('Saved selectedBoardId to localStorage');
             
-            await this.loadBoardData();
+            // Process the board data we already have
+            console.log('Processing board data...');
+            await this.processBoardData(board);
+            console.log('Rendering board...');
             this.renderBoard();
+            
             this.hideLoading();
+            console.log('Board selection complete');
         } catch (error) {
             console.error('Failed to load board:', error);
             this.hideLoading();
+            
+            // Show error to user
+            this.showNotification('Failed to load board. Please try again.');
+            
+            // Try to load the first available board if this one fails
+            if (this.boards && this.boards.length > 0) {
+                console.log('Attempting to load first available board...');
+                const firstBoard = this.boards[0];
+                if (firstBoard && firstBoard.id !== boardId) {
+                    console.log('Loading first available board instead:', firstBoard);
+                    await this.selectBoard(firstBoard.id);
+                }
+            }
         }
     }
 
-    async loadBoardData() {
-        if (!this.currentBoard) return;
+    async processBoardData(board) {
+        if (!board) return;
 
         try {
-            // Load columns with tasks
-            this.columns = await this.apiCall(`/columns/board/${this.currentBoard.id}`);
+            // Use the columns and tasks from the board data
+            this.columns = board.columns || [];
             
             // Extract tasks from columns
             this.tasks = [];
@@ -189,9 +285,32 @@ class KanbanApp {
                 }
             }
             
-            this.renderBoard();
+            console.log('Processed board data:', {
+                columns: this.columns,
+                tasks: this.tasks
+            });
+        } catch (error) {
+            console.error('Failed to process board data:', error);
+            throw error; // Re-throw to be caught by the caller
+        }
+    }
+    
+    // Keep loadBoardData for backward compatibility
+    async loadBoardData() {
+        if (!this.currentBoard) return;
+        
+        try {
+            // If we already have columns with tasks, use them
+            if (this.currentBoard.columns) {
+                await this.processBoardData(this.currentBoard);
+            } else {
+                // Fallback to API call if needed
+                const board = await this.apiCall(`/boards/${this.currentBoard.id}`);
+                await this.processBoardData(board);
+            }
         } catch (error) {
             console.error('Failed to load board data:', error);
+            throw error; // Re-throw to be caught by the caller
         }
     }
 
@@ -685,9 +804,15 @@ class KanbanApp {
     }
 }
 
-// Initialize the application when DOM is loaded
+// Global function for auth system to initialize kanban app
+window.initializeKanbanApp = () => {
+    console.log('Initializing authenticated KanbanApp...');
+    window.kanbanApp = new KanbanApp();
+    window.kanbanApp.init();
+    console.log('KanbanApp initialized:', window.kanbanApp);
+};
+
+// Legacy initialization (will be handled by auth system)
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing KanbanApp...');
-    const app = new KanbanApp();
-    console.log('KanbanApp initialized:', app);
+    console.log('DOM loaded - auth system will handle initialization');
 });

@@ -1,18 +1,20 @@
 """
-Authentication API endpoints.
+Authentication API endpoints for user registration, login, and profile management.
 """
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from ..database import get_db_session
-from ..models.user import User
-from ..auth.schemas import UserCreate, UserLogin, UserResponse, UserUpdate, PasswordChange
-from ..auth.jwt_handler import jwt_handler, Token
-from ..auth.dependencies import get_current_active_user, get_current_admin_user
+from ..models import User
+from ..auth.jwt_handler import JWTHandler
+from ..schemas import UserCreate, UserLogin, UserResponse, UserUpdate, PasswordChangeRequest, TokenResponse, MessageResponse
+from ..auth.dependencies import get_current_user, get_current_admin_user
+from ..utils.error_handler import handle_auth_error, handle_validation_error, handle_not_found_error
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+jwt_handler = JWTHandler()
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -25,39 +27,46 @@ async def register_user(
     
     Creates a new user with hashed password and returns user data.
     """
-    # Check if username already exists
-    result = await db.execute(select(User).where(User.username == user_data.username))
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
+    try:
+        # Check if username already exists
+        result = await db.execute(select(User).where(User.username == user_data.username))
+        if result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already exists"
+            )
+        
+        # Check if email already exists
+        result = await db.execute(select(User).where(User.email == user_data.email))
+        if result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already exists"
+            )
+    
+        # Create new user
+        user = User(
+            username=user_data.username,
+            email=user_data.email,
+            full_name=user_data.full_name,
+            is_verified=True  # Auto-verify for now, can add email verification later
         )
+        user.set_password(user_data.password)
+        
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        
+        return user
     
-    # Check if email already exists
-    result = await db.execute(select(User).where(User.email == user_data.email))
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Create new user
-    user = User(
-        username=user_data.username,
-        email=user_data.email,
-        full_name=user_data.full_name,
-        is_verified=True  # Auto-verify for now, can add email verification later
-    )
-    user.set_password(user_data.password)
-    
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    
-    return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        handle_auth_error(e, "user registration", username=user_data.username, email=user_data.email)
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 async def login_user(
     user_credentials: UserLogin,
     db: AsyncSession = Depends(get_db_session)
@@ -67,35 +76,41 @@ async def login_user(
     
     Accepts username or email with password.
     """
-    # Try to find user by username or email
-    result = await db.execute(
-        select(User).where(
-            (User.username == user_credentials.username) | 
-            (User.email == user_credentials.username)
+    try:
+        # Try to find user by username or email
+        result = await db.execute(
+            select(User).where(
+                (User.username == user_credentials.username) | 
+                (User.email == user_credentials.username)
+            )
         )
-    )
-    user = result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
+        
+        if not user or not user.verify_password(user_credentials.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account not active"
+            )
+        
+        # Create and return JWT token
+        return jwt_handler.create_token_response(user.id, user.username)
     
-    if not user or not user.verify_password(user_credentials.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Inactive user"
-        )
-    
-    # Create and return JWT token
-    return jwt_handler.create_token_response(user.id, user.username)
+    except HTTPException:
+        raise
+    except Exception as e:
+        handle_auth_error(e, "user login", username=user_credentials.username)
 
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_user)
 ) -> Any:
     """Get current user's profile information."""
     return current_user
@@ -104,7 +119,7 @@ async def get_current_user_profile(
 @router.put("/me", response_model=UserResponse)
 async def update_current_user_profile(
     user_update: UserUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ) -> Any:
     """Update current user's profile information."""
@@ -129,26 +144,65 @@ async def update_current_user_profile(
     return current_user
 
 
-@router.post("/change-password", status_code=status.HTTP_200_OK)
+@router.post("/change-password")
 async def change_password(
-    password_data: PasswordChange,
-    current_user: User = Depends(get_current_active_user),
+    password_data: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
-) -> Any:
-    """Change current user's password."""
-    
+):
+    """Change user password."""
     # Verify current password
-    if not current_user.verify_password(password_data.current_password):
+    if not verify_password(password_data.current_password, current_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect current password"
+            detail="Current password is incorrect"
         )
     
-    # Set new password
-    current_user.set_password(password_data.new_password)
+    # Update password
+    current_user.hashed_password = hash_password(password_data.new_password)
     await db.commit()
     
-    return {"message": "Password changed successfully"}
+    return MessageResponse(message="Password changed successfully")
+
+
+@router.get("/debug")
+async def debug_auth(request: Request):
+    """Debug authentication status."""
+    try:
+        # Check for access token in cookies
+        access_token = request.cookies.get("access_token")
+        if not access_token:
+            return {"status": "no_cookie", "cookies": list(request.cookies.keys())}
+        
+        # Try to decode token
+        from ..auth.jwt_handler import JWTHandler
+        jwt_handler = JWTHandler()
+        token_data = jwt_handler.verify_token(access_token)
+        
+        if not token_data:
+            return {"status": "invalid_token", "token_length": len(access_token)}
+        
+        # Check user in database
+        from ..database import get_db_session
+        from sqlalchemy import select
+        async with get_db_session() as db:
+            result = await db.execute(select(User).where(User.id == token_data.user_id))
+            user = result.scalar_one_or_none()
+        
+        if not user:
+            return {"status": "user_not_found", "token_user_id": token_data.user_id}
+        
+        return {
+            "status": "authenticated",
+            "user_id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "token_user_id": token_data.user_id,
+            "token_subject": token_data.sub
+        }
+        
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 
 @router.get("/users", response_model=list[UserResponse])

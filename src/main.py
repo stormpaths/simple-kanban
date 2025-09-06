@@ -9,13 +9,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from .schemas import HealthResponse, MessageRequest, MessageResponse
 from typing import Dict, Any
 import logging
 import os
 
 from .database import create_tables
-from .api import boards, columns, tasks, auth
+from .api import boards, columns, tasks, auth, oidc
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,6 +41,7 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(auth.router, prefix="/api")
+app.include_router(oidc.router, prefix="/api")
 app.include_router(boards.router, prefix="/api")
 app.include_router(columns.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
@@ -58,17 +59,6 @@ async def startup_event():
     create_tables()
     logger.info("Database tables created successfully")
 
-# Pydantic models
-class HealthResponse(BaseModel):
-    status: str
-    version: str
-
-class MessageRequest(BaseModel):
-    message: str
-
-class MessageResponse(BaseModel):
-    echo: str
-    length: int
 
 @app.get("/")
 async def root():

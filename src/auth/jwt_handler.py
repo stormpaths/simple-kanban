@@ -5,20 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 import os
 from jose import JWTError, jwt
-from pydantic import BaseModel
-
-
-class TokenData(BaseModel):
-    """Token data model for JWT payload."""
-    username: Optional[str] = None
-    user_id: Optional[int] = None
-
-
-class Token(BaseModel):
-    """Token response model."""
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
+from ..schemas import TokenData, Token
 
 
 class JWTHandler:
@@ -56,15 +43,16 @@ class JWTHandler:
         except JWTError:
             return None
     
-    def create_token_response(self, user_id: int, username: str) -> Token:
+    def create_token_response(self, user_id: int, username: str) -> Dict[str, Any]:
         """Create a complete token response."""
         access_token = self.create_access_token(
             data={"sub": username, "user_id": user_id}
         )
-        return Token(
-            access_token=access_token,
-            expires_in=self.access_token_expire_minutes * 60
-        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": self.access_token_expire_minutes * 60
+        }
 
 
 # Global JWT handler instance

@@ -2,9 +2,9 @@
 replicaCount: 1
 
 image:
-  repository: registry.stormpath.net/simple-kanban
+  repository: simple-kanban
+  tag: "fixed-frontend"
   pullPolicy: IfNotPresent
-  tag: "latest"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -28,6 +28,8 @@ env:
   OTEL_LOGS_EXPORTER: "otlp"
   OTEL_TRACES_SAMPLER: "parentbased_traceidratio"
   OTEL_TRACES_SAMPLER_ARG: "0.1"  # Sample 10% of traces in production
+  LOG_LEVEL: "DEBUG"
+  SQLALCHEMY_ECHO: "True"
 
 serviceAccount:
   create: true

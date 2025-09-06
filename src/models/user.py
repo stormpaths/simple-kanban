@@ -2,8 +2,8 @@
 User model for authentication and authorization.
 """
 from typing import Optional, List
-from sqlalchemy import String, Boolean, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Boolean
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from passlib.context import CryptContext
 
 from .base import Base, TimestampMixin
@@ -30,6 +30,8 @@ class User(Base, TimestampMixin):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
+    # Relationships
+    boards: Mapped[List["Board"]] = relationship("Board", back_populates="owner", cascade="all, delete-orphan")
     # Future relationships for OIDC providers and groups
     # oidc_providers: Mapped[List["OIDCProvider"]] = relationship("OIDCProvider", back_populates="user")
     # user_groups: Mapped[List["UserGroup"]] = relationship("UserGroup", back_populates="user")
@@ -49,5 +51,8 @@ class User(Base, TimestampMixin):
         """Hash a password (class method for utility use)."""
         return pwd_context.hash(password)
     
-    def __repr__(self) -> str:
-        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+    # Relationships - commented out to avoid async/sync issues in OIDC flow
+    # oidc_providers = relationship("OIDCProvider", back_populates="user", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}', is_active={self.is_active})>"

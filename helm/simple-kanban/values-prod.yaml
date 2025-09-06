@@ -95,3 +95,7 @@ cache:
     hostname: simple-kanban-redis-master
     credentialsSecret: simple-kanban-redis-secret
     passwordKey: redis-password
+
+# OIDC configuration
+oidc:
+  googleOAuthSecret: google-oauth-json

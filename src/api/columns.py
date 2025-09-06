@@ -7,40 +7,14 @@ from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from ..database import get_db
 from ..models import Board, Column
+from ..schemas import ColumnCreate, ColumnResponse, ColumnUpdate, ColumnWithTasksResponse
 
 router = APIRouter(prefix="/columns", tags=["columns"])
 
 
-# Pydantic schemas
-class ColumnCreate(BaseModel):
-    name: str
-    position: int
-    board_id: int
-
-
-class ColumnUpdate(BaseModel):
-    name: Optional[str] = None
-    position: Optional[int] = None
-
-
-class ColumnResponse(BaseModel):
-    id: int
-    name: str
-    position: int
-    board_id: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class ColumnWithTasksResponse(ColumnResponse):
-    tasks: List[dict] = []
 
 
 @router.post("/", response_model=ColumnResponse, status_code=status.HTTP_201_CREATED)

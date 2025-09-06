@@ -1,8 +1,8 @@
 """
-Pydantic schemas for authentication endpoints.
+Authentication-related Pydantic schemas.
 """
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from datetime import datetime
 
 
@@ -25,7 +25,7 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
-    full_name: Optional[str] = None
+    full_name: Optional[str]
     is_active: bool
     is_admin: bool
     is_verified: bool
@@ -45,6 +45,24 @@ class PasswordChange(BaseModel):
     """Schema for password change."""
     current_password: str = Field(..., description="Current password")
     new_password: str = Field(..., min_length=8, max_length=128, description="New password (8-128 characters)")
+
+
+class PasswordChangeRequest(BaseModel):
+    """Schema for password change request."""
+    current_password: str = Field(..., description="Current password")
+    new_password: str = Field(..., min_length=8, max_length=128, description="New password (8-128 characters)")
+
+
+class TokenData(BaseModel):
+    """Token data model for JWT payload."""
+    username: Optional[str] = None
+    user_id: Optional[int] = None
+
+
+class Token(BaseModel):
+    """Token response model."""
+    access_token: str
+    token_type: str = "bearer"
 
 
 class TokenResponse(BaseModel):
@@ -71,7 +89,7 @@ class OIDCUserInfo(BaseModel):
     provider: str
     provider_user_id: str
     email: str
-    name: Optional[str] = None
+    full_name: Optional[str] = None
     avatar_url: Optional[str] = None
 
 
@@ -79,5 +97,3 @@ class AccountLinkRequest(BaseModel):
     """Schema for linking OIDC account to existing user."""
     username: str = Field(..., description="Existing username to link to")
     password: str = Field(..., description="Password for existing account")
-    provider: str = Field(..., description="OIDC provider name")
-    provider_user_id: str = Field(..., description="Provider user ID")
