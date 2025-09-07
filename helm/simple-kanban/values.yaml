@@ -11,10 +11,6 @@ nameOverride: ""
 fullnameOverride: ""
 
 env:
-  DATABASE_URL: "postgresql://user:password@postgres:5432/kanban"
-  REDIS_URL: "redis://redis:6379/0"
-  JWT_SECRET_KEY: "your-secret-key-here"
-  SESSION_SECRET_KEY: "your-session-secret-here"
   # OpenTelemetry configuration - OTLP supports both HTTP and gRPC
   OTEL_SERVICE_NAME: "simple-kanban"
   OTEL_SERVICE_VERSION: "1.0.0"

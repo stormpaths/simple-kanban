@@ -10,7 +10,6 @@ class TaskCreate(BaseModel):
     """Schema for creating a new task."""
     title: str
     description: Optional[str] = None
-    comments: Optional[str] = None
     column_id: int
     position: Optional[int] = None
 
@@ -19,7 +18,6 @@ class TaskUpdate(BaseModel):
     """Schema for updating a task."""
     title: Optional[str] = None
     description: Optional[str] = None
-    comments: Optional[str] = None
     position: Optional[int] = None
 
 
@@ -34,7 +32,6 @@ class TaskResponse(BaseModel):
     id: int
     title: str
     description: Optional[str]
-    comments: Optional[str]
     column_id: int
     position: int
     created_at: datetime

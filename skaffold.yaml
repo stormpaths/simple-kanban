@@ -29,7 +29,7 @@ profiles:
       releases:
       - name: simple-kanban-dev
         chartPath: helm/simple-kanban
-        namespace: apps
+        namespace: apps-dev
         valuesFiles:
         - helm/simple-kanban/values-dev.yaml
 - name: prod

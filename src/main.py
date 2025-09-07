@@ -5,10 +5,11 @@ This module provides the main FastAPI application with health checks,
 basic routing, and error handling.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from .schemas import HealthResponse, MessageRequest, MessageResponse
 from .core.config import settings
 from .middleware import (
@@ -25,7 +26,11 @@ from .database import create_tables
 from .api import boards, columns, tasks, auth, oidc, task_comments
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+log_level = logging.DEBUG if settings.debug else logging.INFO
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
@@ -36,6 +41,33 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Add exception handler for validation errors (422)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle Pydantic validation errors with detailed logging."""
+    logger.error(f"422 Validation error on {request.method} {request.url}")
+    
+    # Get request body for debugging
+    try:
+        body = await request.body()
+        if body:
+            logger.error(f"Request body: {body.decode('utf-8')}")
+        else:
+            logger.error("Request body: empty")
+    except Exception as e:
+        logger.error(f"Could not read request body: {e}")
+    
+    # Log headers for debugging auth issues
+    logger.error(f"Request headers: {dict(request.headers)}")
+    
+    # Log detailed validation errors
+    logger.error(f"Validation errors: {exc.errors()}")
+    
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
 
 # Setup Redis client for rate limiting
 redis_client = setup_redis_client()

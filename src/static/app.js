@@ -582,7 +582,7 @@ class KanbanApp {
         
         const formData = new FormData(e.target);
         const taskData = {
-            title: formData.get('title'),
+            title: formData.get('title') || '',
             description: formData.get('description') || null,
             column_id: parseInt(formData.get('column_id'))
         };

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_name: str = "Simple Kanban Board"
     app_version: str = "1.0.0"
     environment: str = "development"
-    debug: bool = False
+    debug: bool = os.getenv("DEBUG", "false").lower() == "true"
     
     # API Configuration
     api_v1_str: str = "/api/v1"
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     csrf_protection_enabled: bool = False
     
     # Database Configuration
-    database_url: str = "postgresql+asyncpg://kanban:kanban@localhost:5432/simple_kanban"
+    database_url: Optional[str] = None
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "simple_kanban"
@@ -44,11 +44,44 @@ class Settings(BaseSettings):
     postgres_password: str = "kanban"
     
     # Redis Configuration
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: Optional[str] = None
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_password: Optional[str] = None
     redis_db: int = 0
+    
+    def model_post_init(self, __context) -> None:
+        """Post-initialization hook to load environment variables and construct URLs."""
+        # Load environment variables at runtime
+        self.postgres_host = os.getenv("POSTGRES_HOST", self.postgres_host)
+        self.postgres_port = int(os.getenv("POSTGRES_PORT", str(self.postgres_port)))
+        self.postgres_db = os.getenv("POSTGRES_DB", self.postgres_db)
+        self.postgres_user = os.getenv("POSTGRES_USER", self.postgres_user)
+        self.postgres_password = os.getenv("POSTGRES_PASSWORD", self.postgres_password)
+        
+        self.redis_host = os.getenv("REDIS_HOST", self.redis_host)
+        self.redis_port = int(os.getenv("REDIS_PORT", str(self.redis_port)))
+        self.redis_password = os.getenv("REDIS_PASSWORD", self.redis_password)
+        self.redis_db = int(os.getenv("REDIS_DB", str(self.redis_db)))
+        
+        # Debug: Print loaded values
+        print(f"DEBUG: postgres_host={self.postgres_host}")
+        print(f"DEBUG: postgres_user={self.postgres_user}")  
+        print(f"DEBUG: postgres_password={self.postgres_password}")
+        print(f"DEBUG: postgres_db={self.postgres_db}")
+        
+        # Construct database_url from components if not provided
+        if not self.database_url:
+            self.database_url = f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        
+        # Construct redis_url from components if not provided
+        if not self.redis_url:
+            if self.redis_password:
+                self.redis_url = f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}"
+            else:
+                self.redis_url = f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
+        
+        print(f"DEBUG: Final database_url={self.database_url}")
     
     # CORS Configuration
     backend_cors_origins: List[str] = [
@@ -130,14 +163,22 @@ class Settings(BaseSettings):
     
     model_config = {
         "env_file": ".env",
-        "case_sensitive": False
+        "case_sensitive": False,
+        "env_prefix": ""
     }
 
 
-# Global settings instance
-settings = Settings()
+# Global settings instance - lazy initialization
+_settings: Optional[Settings] = None
 
 
 def get_settings() -> Settings:
     """Get application settings."""
-    return settings
+    global _settings
+    if _settings is None:
+        _settings = Settings()
+    return _settings
+
+
+# Global settings instance for backward compatibility
+settings = get_settings()

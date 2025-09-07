@@ -17,6 +17,17 @@ branch_labels = None
 depends_on = None
 
 
+def table_exists(connection, table_name):
+    """Check if a table exists"""
+    result = connection.execute(text("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = :table_name
+        )
+    """), {"table_name": table_name})
+    return result.scalar()
+
+
 def column_exists(connection, table_name, column_name):
     """Check if a column exists in a table"""
     result = connection.execute(text("""
@@ -28,21 +39,21 @@ def column_exists(connection, table_name, column_name):
 
 
 def upgrade() -> None:
-    # Get connection to check existing columns
+    # Get connection to check existing tables and columns
     connection = op.get_bind()
     
+    # Only proceed if users table exists
+    if not table_exists(connection, 'users'):
+        print("Users table does not exist, skipping auth field additions")
+        return
+    
     # Add columns only if they don't exist
-    if not column_exists(connection, 'users', 'hashed_password'):
-        op.add_column('users', sa.Column('hashed_password', sa.String(), nullable=True))
+    # Skip hashed_password as it's already in migration 001
     
     if not column_exists(connection, 'users', 'full_name'):
         op.add_column('users', sa.Column('full_name', sa.String(), nullable=True))
     
-    if not column_exists(connection, 'users', 'is_active'):
-        op.add_column('users', sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'))
-    
-    if not column_exists(connection, 'users', 'is_admin'):
-        op.add_column('users', sa.Column('is_admin', sa.Boolean(), nullable=False, server_default='false'))
+    # Skip is_active and is_admin as they're already in migration 001
     
     if not column_exists(connection, 'users', 'is_verified'):
         op.add_column('users', sa.Column('is_verified', sa.Boolean(), nullable=False, server_default='false'))

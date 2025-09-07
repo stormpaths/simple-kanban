@@ -8,12 +8,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from .models import Base
+from .core.config import get_settings
 
-# Database URL from environment
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://kanban:kanban@simple-kanban-postgres-postgresql.apps.svc.cluster.local:5432/simple_kanban"
-)
+# Get database URL from settings
+settings = get_settings()
+DATABASE_URL = settings.database_url
 
 # For testing, use SQLite if asyncpg is not available
 try:

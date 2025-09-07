@@ -8,20 +8,23 @@ deploy:
     - name: simple-kanban-postgres-dev
       remoteChart: bitnami/postgresql
       version: "16.7.11"
-      namespace: apps
+      namespace: apps-dev
       setValues:
-        auth.postgresPassword: kanban
+        auth.existingSecret: simple-kanban-postgres-dev-secret
+        auth.secretKeys.adminPasswordKey: postgres-password
+        auth.secretKeys.userPasswordKey: postgres-password
         auth.username: kanban
-        auth.password: kanban
         auth.database: simple_kanban
         primary.persistence.size: 1Gi
     - name: simple-kanban-redis-dev
       remoteChart: bitnami/redis
       version: "21.2.3"
-      namespace: apps
+      namespace: apps-dev
       setValues:
-        auth.password: kanban
-        master.persistence.size: 1Gi
+        auth.existingSecret: simple-kanban-redis-dev-secret
+        auth.existingSecretPasswordKey: redis-password
+        master.persistence.size: 2Gi
+        replica.replicaCount: 0
 profiles:
 - name: dev
   deploy:
@@ -30,7 +33,7 @@ profiles:
       - name: simple-kanban-postgres-dev
         remoteChart: bitnami/postgresql
         version: "16.7.11"
-        namespace: apps
+        namespace: apps-dev
         setValues:
           auth.postgresPassword: kanban
           auth.username: kanban
@@ -40,10 +43,12 @@ profiles:
       - name: simple-kanban-redis-dev
         remoteChart: bitnami/redis
         version: "21.2.3"
-        namespace: apps
+        namespace: apps-dev
         setValues:
-          auth.password: kanban
-          master.persistence.size: 1Gi
+          auth.existingSecret: simple-kanban-redis-dev-secret
+          auth.existingSecretPasswordKey: redis-password
+          master.persistence.size: 2Gi
+          replica.replicaCount: 0
 - name: prod
   deploy:
     helm:
@@ -67,7 +72,8 @@ profiles:
         setValues:
           auth.existingSecret: simple-kanban-redis-secret
           auth.existingSecretPasswordKey: redis-password
-          master.persistence.size: 1Gi
+          master.persistence.size: 2Gi
+          replica.replicaCount: 0
           metrics.enabled: true
 portForward:
 - resourceType: service

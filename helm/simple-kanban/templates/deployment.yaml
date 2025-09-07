@@ -47,19 +47,62 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if .Values.env }}
           env:
+            {{- if .Values.env }}
             {{- toYaml .Values.env | nindent 12 }}
-          {{- end }}
-          {{- if .Values.configMap.data }}
+            {{- end }}
+            {{- if .Values.storage.postgres }}
+            - name: POSTGRES_HOST
+              value: {{ .Values.storage.postgres.hostname }}
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: {{ .Values.storage.postgres.database }}
+            - name: POSTGRES_USER
+              value: {{ .Values.storage.postgres.username }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.storage.postgres.existingSecret }}
+                  key: {{ .Values.storage.postgres.userPasswordKey }}
+            {{- end }}
+            {{- if .Values.cache.redis }}
+            - name: REDIS_HOST
+              value: {{ .Values.cache.redis.hostname }}
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_DB
+              value: "0"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cache.redis.existingSecret }}
+                  key: {{ .Values.cache.redis.passwordKey }}
+            {{- end }}
           envFrom:
+            {{- if or .Values.storage .Values.cache }}
+            - configMapRef:
+                name: {{ include "simple-kanban.fullname" . }}-storage
+            {{- end }}
+            {{- if .Values.configMap.data }}
             - configMapRef:
                 name: {{ include "simple-kanban.fullname" . }}
-          {{- end }}
-          {{- if .Values.secret.data }}
+            {{- end }}
+            {{- if .Values.secret.data }}
             - secretRef:
                 name: {{ include "simple-kanban.fullname" . }}
-          {{- end }}
+            {{- else }}
+            - secretRef:
+                name: {{ include "simple-kanban.fullname" . }}-app-secrets
+            {{- end }}
+            {{- if .Values.storage.postgres.existingSecret }}
+            - secretRef:
+                name: {{ .Values.storage.postgres.existingSecret }}
+            {{- end }}
+            {{- if .Values.cache.redis.existingSecret }}
+            - secretRef:
+                name: {{ .Values.cache.redis.existingSecret }}
+            {{- end }}
           volumeMounts:
             - name: tmp
               mountPath: /tmp

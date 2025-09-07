@@ -1,0 +1,17 @@
+{{- if or .Values.storage .Values.cache }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "simple-kanban.fullname" . }}-storage
+  labels:
+    {{- include "simple-kanban.labels" . | nindent 4 }}
+data:
+  {{- if .Values.storage.postgres }}
+  POSTGRES_HOST: {{ .Values.storage.postgres.hostname | quote }}
+  POSTGRES_USER: {{ .Values.storage.postgres.username | quote }}
+  POSTGRES_DB: {{ .Values.storage.postgres.database | quote }}
+  {{- end }}
+  {{- if .Values.cache.redis }}
+  REDIS_HOST: {{ .Values.cache.redis.hostname | quote }}
+  {{- end }}
+{{- end }}

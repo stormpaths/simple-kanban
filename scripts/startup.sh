@@ -5,7 +5,13 @@ echo "Starting Simple Kanban application..."
 
 # Wait for database to be ready
 echo "Waiting for database connection..."
-export DATABASE_URL="${DATABASE_URL:-postgresql://kanban:kanban@simple-kanban-postgres-postgresql.apps.svc.cluster.local:5432/simple_kanban}"
+# Construct DATABASE_URL from environment variables
+POSTGRES_HOST=${POSTGRES_HOST:-simple-kanban-postgres-postgresql.apps.svc.cluster.local}
+POSTGRES_USER=${POSTGRES_USER:-kanban}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kanban}
+POSTGRES_DB=${POSTGRES_DB:-simple_kanban}
+POSTGRES_PORT=${POSTGRES_PORT:-5432}
+export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
 echo "Using DATABASE_URL: $DATABASE_URL"
 
 python -c "
@@ -48,67 +54,22 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 engine = create_engine(DATABASE_URL)
 
 with engine.connect() as conn:
-    # Check if users table exists and what columns it has
-    users_exists = conn.execute(text('''
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'users'
-        )
-    ''')).scalar()
+    # Check if this is a fresh database (no tables except alembic_version)
+    tables = conn.execute(text('''
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name != 'alembic_version'
+    ''')).fetchall()
     
-    if users_exists:
-        print('Users table exists, checking columns...')
-        
-        # Get existing columns
-        existing_cols = conn.execute(text('''
-            SELECT column_name FROM information_schema.columns 
-            WHERE table_name = 'users'
-        ''')).fetchall()
-        existing_column_names = [row[0] for row in existing_cols]
-        print(f'Existing columns: {existing_column_names}')
-        
-        # Add missing auth columns
-        auth_columns = {
-            'hashed_password': 'VARCHAR',
-            'full_name': 'VARCHAR', 
-            'is_active': 'BOOLEAN DEFAULT true',
-            'is_admin': 'BOOLEAN DEFAULT false',
-            'is_verified': 'BOOLEAN DEFAULT false'
-        }
-        
-        for col_name, col_type in auth_columns.items():
-            if col_name not in existing_column_names:
-                print(f'Adding missing column: {col_name}')
-                try:
-                    conn.execute(text(f'ALTER TABLE users ADD COLUMN {col_name} {col_type}'))
-                    conn.commit()
-                except Exception as e:
-                    print(f'Error adding column {col_name}: {e}')
-            else:
-                print(f'Column {col_name} already exists')
-    else:
-        print('Users table does not exist, will create via alembic')
-    
-    # Ensure alembic version table is properly set up
-    alembic_exists = conn.execute(text('''
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'alembic_version'
-        )
-    ''')).scalar()
-    
-    if not alembic_exists:
-        print('Creating alembic_version table')
-        conn.execute(text('CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)'))
-        conn.execute(text('INSERT INTO alembic_version (version_num) VALUES (\'001\')'))
+    if not tables:
+        print('Fresh database detected, clearing alembic version for clean migration')
+        # Clear any existing alembic version entries
+        conn.execute(text('DELETE FROM alembic_version'))
         conn.commit()
-    
-    # Always run migrations to ensure we're at the latest version
-    print('Current alembic version:', conn.execute(text('SELECT version_num FROM alembic_version')).scalar())
+    else:
+        print(f'Existing tables found: {[t[0] for t in tables]}')
 "
 
-# Set DATABASE_URL for alembic
-export DATABASE_URL="postgresql://kanban:kanban@simple-kanban-postgres-postgresql.apps.svc.cluster.local:5432/simple_kanban"
+# DATABASE_URL already set above from environment variables
 
 # Run alembic upgrade to ensure all migrations are applied
 echo "Running alembic upgrade..."

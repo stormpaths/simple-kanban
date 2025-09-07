@@ -26,7 +26,6 @@ ingress:
   className: "nginx"
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts:
     - host: kanban.stormpath.dev
       paths:
@@ -41,6 +40,8 @@ ingress:
 env:
   - name: ENVIRONMENT
     value: "development"
+  - name: DEBUG
+    value: "true"
   - name: LOG_LEVEL
     value: "DEBUG"
   - name: RELOAD
@@ -58,15 +59,17 @@ securityContext:
 # Database and cache configuration for development
 storage:
   postgres:
-    hostname: simple-kanban-postgres-dev
+    hostname: simple-kanban-postgres-dev-postgresql
     username: kanban
     database: simple_kanban
-    password: kanban
+    existingSecret: simple-kanban-postgres-dev-secret
+    userPasswordKey: postgres-password
 
 cache:
   redis:
     hostname: simple-kanban-redis-dev-master
-    password: kanban
+    existingSecret: simple-kanban-redis-dev-secret
+    passwordKey: redis-password
 
 # OIDC configuration
 oidc:
