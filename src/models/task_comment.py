@@ -33,7 +33,7 @@ class TaskComment(Base, TimestampMixin):
     )
     
     # Relationships
-    task: Mapped["Task"] = relationship("Task", back_populates="comments")
+    task: Mapped["Task"] = relationship("Task", back_populates="task_comments")
     author: Mapped["User"] = relationship("User", back_populates="task_comments")
     
     def __repr__(self) -> str:
