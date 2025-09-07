@@ -63,7 +63,7 @@ storage:
     username: kanban
     database: simple_kanban
     existingSecret: simple-kanban-postgres-dev-secret
-    userPasswordKey: postgres-password
+    userPasswordKey: password
 
 cache:
   redis:

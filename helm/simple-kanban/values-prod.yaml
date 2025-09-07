@@ -1,5 +1,5 @@
 # Production environment overrides
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: registry.stormpath.net/simple-kanban
@@ -87,17 +87,16 @@ readinessProbe:
 # Database and cache configuration for production
 storage:
   postgres:
-    hostname: simple-kanban-postgres
+    hostname: simple-kanban-postgres-postgresql
     username: kanban
     database: simple_kanban
-    credentialsSecret: simple-kanban-postgres-secret
-    adminPasswordKey: postgres-password
+    existingSecret: simple-kanban-postgres-secret
     userPasswordKey: password
 
 cache:
   redis:
     hostname: simple-kanban-redis-master
-    credentialsSecret: simple-kanban-redis-secret
+    existingSecret: simple-kanban-redis-secret
     passwordKey: redis-password
 
 # OIDC configuration

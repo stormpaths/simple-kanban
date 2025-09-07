@@ -62,9 +62,12 @@ with engine.connect() as conn:
     
     if not tables:
         print('Fresh database detected, clearing alembic version for clean migration')
-        # Clear any existing alembic version entries
-        conn.execute(text('DELETE FROM alembic_version'))
-        conn.commit()
+        # Check if alembic_version table exists before trying to clear it
+        try:
+            conn.execute(text('DELETE FROM alembic_version'))
+            conn.commit()
+        except ProgrammingError:
+            print('alembic_version table does not exist yet, skipping clear')
     else:
         print(f'Existing tables found: {[t[0] for t in tables]}')
 "
