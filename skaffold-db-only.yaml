@@ -5,7 +5,7 @@ metadata:
 deploy:
   helm:
     releases:
-    - name: simple-kanban-postgres
+    - name: simple-kanban-postgres-dev
       remoteChart: bitnami/postgresql
       version: "16.7.11"
       namespace: apps
@@ -15,19 +15,66 @@ deploy:
         auth.password: kanban
         auth.database: simple_kanban
         primary.persistence.size: 1Gi
-    - name: simple-kanban-redis
+    - name: simple-kanban-redis-dev
       remoteChart: bitnami/redis
       version: "21.2.3"
       namespace: apps
       setValues:
         auth.password: kanban
         master.persistence.size: 1Gi
+profiles:
+- name: dev
+  deploy:
+    helm:
+      releases:
+      - name: simple-kanban-postgres-dev
+        remoteChart: bitnami/postgresql
+        version: "16.7.11"
+        namespace: apps
+        setValues:
+          auth.postgresPassword: kanban
+          auth.username: kanban
+          auth.password: kanban
+          auth.database: simple_kanban
+          primary.persistence.size: 1Gi
+      - name: simple-kanban-redis-dev
+        remoteChart: bitnami/redis
+        version: "21.2.3"
+        namespace: apps
+        setValues:
+          auth.password: kanban
+          master.persistence.size: 1Gi
+- name: prod
+  deploy:
+    helm:
+      releases:
+      - name: simple-kanban-postgres
+        remoteChart: bitnami/postgresql
+        version: "16.7.11"
+        namespace: apps
+        setValues:
+          auth.existingSecret: simple-kanban-postgres-secret
+          auth.secretKeys.adminPasswordKey: postgres-password
+          auth.secretKeys.userPasswordKey: password
+          auth.username: kanban
+          auth.database: simple_kanban
+          primary.persistence.size: 2Gi
+          metrics.enabled: true
+      - name: simple-kanban-redis
+        remoteChart: bitnami/redis
+        version: "21.2.3"
+        namespace: apps
+        setValues:
+          auth.existingSecret: simple-kanban-redis-secret
+          auth.existingSecretPasswordKey: redis-password
+          master.persistence.size: 1Gi
+          metrics.enabled: true
 portForward:
 - resourceType: service
-  resourceName: simple-kanban-postgres-postgresql
+  resourceName: simple-kanban-postgres-dev-postgresql
   port: 5432
   localPort: 5432
 - resourceType: service
-  resourceName: simple-kanban-redis-master
+  resourceName: simple-kanban-redis-dev-master
   port: 6379
   localPort: 6379

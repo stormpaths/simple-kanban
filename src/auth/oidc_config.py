@@ -1,10 +1,11 @@
 """
 OIDC provider configuration and utilities.
 """
-import os
 import json
+import os
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 
 @dataclass
@@ -52,14 +53,20 @@ class OIDCConfigManager:
         """Create Google OIDC configuration from loaded data."""
         web_config = config_data.get("web", {})
         
-        # Determine redirect URI based on configuration source
-        if is_kanban_specific:
-            # Use kanban-specific callback URL
-            redirect_uri = "https://kanban.stormpath.dev/api/oidc/callback/google"
-        else:
-            # Use stormpath callback URL as fallback
+        # Get base URL from environment or derive from redirect URIs
+        base_url = os.getenv("BASE_URL")
+        if not base_url:
+            # Try to derive from existing redirect URIs in config
             redirect_uris = web_config.get("redirect_uris", [])
-            redirect_uri = redirect_uris[0] if redirect_uris else "https://kanban.stormpath.dev/api/oidc/callback/google"
+            if redirect_uris:
+                parsed = urlparse(redirect_uris[0])
+                base_url = f"{parsed.scheme}://{parsed.netloc}"
+            else:
+                # Fallback to production domain
+                base_url = "https://kanban.stormpath.net"
+        
+        # Construct redirect URI
+        redirect_uri = f"{base_url}/api/oidc/callback/google"
         
         return OIDCProviderConfig(
             client_id=web_config.get("client_id", ""),

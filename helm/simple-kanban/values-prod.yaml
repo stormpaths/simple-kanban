@@ -2,6 +2,8 @@
 replicaCount: 3
 
 image:
+  repository: registry.stormpath.net/simple-kanban
+  tag: "d145974"
   pullPolicy: IfNotPresent
 
 resources:
@@ -27,14 +29,14 @@ ingress:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts:
-    - host: simple-kanban.example.com
+    - host: kanban.stormpath.net
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: simple-kanban-tls
+    - secretName: stormpath-wildcard-tls
       hosts:
-        - simple-kanban.example.com
+        - kanban.stormpath.net
 
 # Production environment variables
 env:
@@ -44,6 +46,8 @@ env:
     value: "INFO"
   - name: WORKERS
     value: "4"
+  - name: BASE_URL
+    value: "https://kanban.stormpath.net"
 
 # Strict security for production
 podSecurityContext:

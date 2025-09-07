@@ -45,6 +45,8 @@ env:
     value: "DEBUG"
   - name: RELOAD
     value: "true"
+  - name: BASE_URL
+    value: "https://kanban.stormpath.dev"
 
 # Relaxed security for development
 podSecurityContext:
@@ -56,14 +58,14 @@ securityContext:
 # Database and cache configuration for development
 storage:
   postgres:
-    hostname: simple-kanban-postgres
+    hostname: simple-kanban-postgres-dev
     username: kanban
     database: simple_kanban
     password: kanban
 
 cache:
   redis:
-    hostname: simple-kanban-redis-master
+    hostname: simple-kanban-redis-dev-master
     password: kanban
 
 # OIDC configuration
