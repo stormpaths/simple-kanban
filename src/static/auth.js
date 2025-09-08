@@ -118,6 +118,14 @@ class AuthManager {
         if (this.currentUser) {
             document.getElementById('user-name').textContent = 
                 this.currentUser.full_name || this.currentUser.username || 'User';
+            
+            // Show admin panel link for user ID 1 or admin users
+            const adminPanel = document.getElementById('admin-panel');
+            if (this.currentUser.id === 1 || this.currentUser.is_admin) {
+                adminPanel.style.display = 'block';
+            } else {
+                adminPanel.style.display = 'none';
+            }
         }
         
         // Initialize the main kanban app

@@ -23,7 +23,7 @@ import logging
 import os
 
 from .database import create_tables
-from .api import boards, columns, tasks, auth, oidc, task_comments
+from .api import boards, columns, tasks, auth, oidc, task_comments, admin
 
 # Configure logging
 log_level = logging.DEBUG if settings.debug else logging.INFO
@@ -93,6 +93,7 @@ app.include_router(boards.router, prefix="/api")
 app.include_router(columns.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
 app.include_router(task_comments.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
@@ -122,6 +123,17 @@ async def root():
             "status": "running",
             "docs": "/docs"
         }
+
+@app.get("/admin")
+async def admin_panel():
+    """Serve the admin panel interface."""
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    admin_path = os.path.join(static_dir, "admin.html")
+    
+    if os.path.exists(admin_path):
+        return FileResponse(admin_path)
+    else:
+        return {"error": "Admin panel not found"}
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
