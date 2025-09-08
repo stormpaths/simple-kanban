@@ -16,6 +16,7 @@ from ..database import get_db_session
 from ..auth.dependencies import get_current_user
 from ..models.user import User
 from ..models.board import Board
+from ..models.column import Column
 from ..models.task import Task
 from ..schemas.admin import UserStatsResponse, UserUpdateRequest
 
@@ -49,7 +50,7 @@ async def get_all_users_with_stats(
     # Query users with their boards and tasks for statistics
     result = await db.execute(
         select(User)
-        .options(selectinload(User.boards).selectinload(Board.columns).selectinload("tasks"))
+        .options(selectinload(User.boards).selectinload(Board.columns).selectinload(Column.tasks))
         .order_by(User.id)
     )
     users = result.scalars().all()
@@ -128,7 +129,7 @@ async def update_user(
     # Get the user to update
     result = await db.execute(
         select(User)
-        .options(selectinload(User.boards).selectinload(Board.columns).selectinload("tasks"))
+        .options(selectinload(User.boards).selectinload(Board.columns).selectinload(Column.tasks))
         .where(User.id == user_id)
     )
     user = result.scalar_one_or_none()

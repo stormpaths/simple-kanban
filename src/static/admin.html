@@ -4,21 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Simple Kanban</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        // Apply theme immediately to prevent flash
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
     <style>
+        body {
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            min-height: 100vh;
+        }
+        
         .admin-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 2rem;
+        }
+        
+        .admin-panel {
+            background: var(--backdrop-blur);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px var(--shadow-light);
+            border: 1px solid var(--border-primary);
         }
         
         .admin-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-primary);
+        }
+        
+        .admin-header h1 {
+            color: var(--text-tertiary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
         
         .stats-grid {
@@ -29,17 +64,24 @@
         }
         
         .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             padding: 20px;
             text-align: center;
+            box-shadow: 0 1px 3px var(--shadow-light);
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px var(--shadow-medium);
         }
         
         .stat-number {
             font-size: 2em;
             font-weight: bold;
-            color: var(--primary-color);
+            color: var(--accent-primary);
             margin-bottom: 5px;
         }
         
@@ -49,17 +91,19 @@
         }
         
         .users-table {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
             border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 1px 3px var(--shadow-light);
         }
         
         .table-header {
-            background: var(--bg-secondary);
+            background: var(--bg-tertiary);
             padding: 15px 20px;
-            font-weight: bold;
-            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: var(--text-tertiary);
+            border-bottom: 1px solid var(--border-primary);
         }
         
         .user-row {
@@ -67,8 +111,9 @@
             grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr 120px;
             gap: 15px;
             padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-primary);
             align-items: center;
+            color: var(--text-primary);
         }
         
         .user-row:last-child {
@@ -76,7 +121,7 @@
         }
         
         .user-row:hover {
-            background: var(--bg-secondary);
+            background: var(--bg-tertiary);
         }
         
         .status-badge {
@@ -88,18 +133,18 @@
         }
         
         .status-active {
-            background: #d4edda;
-            color: #155724;
+            background: #e8f5e8;
+            color: #2e7d32;
         }
         
         .status-inactive {
-            background: #f8d7da;
-            color: #721c24;
+            background: #ffebee;
+            color: #d32f2f;
         }
         
         .admin-badge {
-            background: #fff3cd;
-            color: #856404;
+            background: #e3f2fd;
+            color: #1976d2;
         }
         
         .user-actions {
@@ -117,21 +162,21 @@
         }
         
         .btn-toggle {
-            background: var(--secondary-color);
+            background: #6b7280;
             color: white;
         }
         
         .btn-toggle:hover {
-            background: var(--secondary-hover);
+            background: #4b5563;
         }
         
         .btn-admin {
-            background: var(--warning-color);
+            background: var(--accent-primary);
             color: white;
         }
         
         .btn-admin:hover {
-            background: var(--warning-hover);
+            background: var(--accent-hover);
         }
         
         .loading {
@@ -141,20 +186,29 @@
         }
         
         .error {
-            background: #f8d7da;
-            color: #721c24;
+            background: #ffebee;
+            color: #d32f2f;
             padding: 15px;
-            border-radius: 4px;
+            border-radius: 8px;
             margin-bottom: 20px;
+            border: 1px solid #ffcdd2;
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <div class="admin-header">
-            <h1>Admin Panel</h1>
-            <button onclick="goToKanban()" class="btn btn-secondary">Back to Kanban</button>
-        </div>
+        <div class="admin-panel">
+            <div class="admin-header">
+                <h1><i class="fas fa-user-shield"></i> Admin Panel</h1>
+                <div class="header-actions">
+                    <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button onclick="goToKanban()" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Kanban
+                    </button>
+                </div>
+            </div>
         
         <div id="error-message" class="error" style="display: none;"></div>
         
@@ -181,7 +235,7 @@
             <div class="table-header">User Management</div>
             <div id="users-loading" class="loading">Loading users...</div>
             <div id="users-content" style="display: none;">
-                <div class="user-row" style="font-weight: bold; background: var(--bg-secondary);">
+                <div class="user-row" style="font-weight: 600; background: var(--bg-tertiary); color: var(--text-tertiary);">
                     <div>Username</div>
                     <div>Email</div>
                     <div>Status</div>
@@ -193,6 +247,7 @@
                 <div id="users-list"></div>
             </div>
         </div>
+        </div>
     </div>
 
     <script>
@@ -201,17 +256,28 @@
 
         async function loadAdminData() {
             try {
+                // First check if we have a token, if not try cookie-based auth
                 const token = localStorage.getItem('token');
-                if (!token) {
+                
+                // Try to get current user to verify authentication
+                const authResponse = await fetch('/api/auth/me', {
+                    headers: token ? {
+                        'Authorization': `Bearer ${token}`
+                    } : {},
+                    credentials: 'include' // Include cookies for OIDC auth
+                });
+                
+                if (!authResponse.ok) {
                     window.location.href = '/';
                     return;
                 }
 
                 // Load stats
                 const statsResponse = await fetch('/api/admin/stats', {
-                    headers: {
+                    headers: token ? {
                         'Authorization': `Bearer ${token}`
-                    }
+                    } : {},
+                    credentials: 'include'
                 });
 
                 if (!statsResponse.ok) {
@@ -223,9 +289,10 @@
 
                 // Load users
                 const usersResponse = await fetch('/api/admin/users', {
-                    headers: {
+                    headers: token ? {
                         'Authorization': `Bearer ${token}`
-                    }
+                    } : {},
+                    credentials: 'include'
                 });
 
                 if (!usersResponse.ok) {
@@ -290,9 +357,10 @@
                 const response = await fetch(`/api/admin/users/${userId}`, {
                     method: 'PATCH',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',
                     body: JSON.stringify({
                         is_active: newStatus
                     })
@@ -327,9 +395,10 @@
                 const response = await fetch(`/api/admin/users/${userId}`, {
                     method: 'PATCH',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',
                     body: JSON.stringify({
                         is_admin: newStatus
                     })
@@ -359,9 +428,10 @@
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/admin/stats', {
-                    headers: {
+                    headers: token ? {
                         'Authorization': `Bearer ${token}`
-                    }
+                    } : {},
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -386,8 +456,32 @@
             window.location.href = '/';
         }
 
+        // Theme toggle functionality
+        function initTheme() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            
+            // Update icon based on current theme
+            themeIcon.className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                
+                // Update icon
+                themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            });
+        }
+        
         // Load data on page load
-        document.addEventListener('DOMContentLoaded', loadAdminData);
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            loadAdminData();
+        });
     </script>
 </body>
 </html>

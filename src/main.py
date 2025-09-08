@@ -124,6 +124,17 @@ async def root():
             "docs": "/docs"
         }
 
+@app.get("/admin")
+async def admin_panel():
+    """Serve the admin panel interface."""
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    admin_path = os.path.join(static_dir, "admin.html")
+    
+    if os.path.exists(admin_path):
+        return FileResponse(admin_path)
+    else:
+        return {"error": "Admin panel not found"}
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint for container orchestration."""
