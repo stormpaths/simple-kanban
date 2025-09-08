@@ -14,9 +14,9 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-# Enable autoscaling in production
+# Disable autoscaling for troubleshooting
 autoscaling:
-  enabled: true
+  enabled: false
   minReplicas: 3
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70

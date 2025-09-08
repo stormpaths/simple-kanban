@@ -4,7 +4,7 @@ Configuration management for Simple Kanban Board application.
 import os
 import secrets
 from typing import List, Optional
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "simple_kanban"
     postgres_user: str = "kanban"
-    postgres_password: str = "kanban"
+    postgres_password: str = Field(default="", description="PostgreSQL password from environment")
     
     # Redis Configuration
     redis_url: Optional[str] = None

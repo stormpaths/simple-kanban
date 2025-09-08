@@ -32,12 +32,12 @@ services:
       - DEBUG=true
       - JWT_SECRET_KEY=dev-jwt-secret-key-change-in-production
       - SESSION_SECRET_KEY=dev-session-secret-key-change-in-production
-      - DATABASE_URL=postgresql+asyncpg://kanban:kanban@postgres:5432/simple_kanban
+      - DATABASE_URL=postgresql+asyncpg://kanban:${POSTGRES_PASSWORD:-your-secure-postgres-password}@postgres:5432/simple_kanban
       - REDIS_URL=redis://redis:6379/0
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=simple_kanban
       - POSTGRES_USER=kanban
-      - POSTGRES_PASSWORD=kanban
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-your-secure-postgres-password}
       - REDIS_HOST=redis
       - REDIS_PASSWORD=
       - CORS_ORIGINS=["http://localhost:3000","http://localhost:8000","http://localhost:8080"]
@@ -55,7 +55,7 @@ services:
     environment:
       - POSTGRES_DB=simple_kanban
       - POSTGRES_USER=kanban
-      - POSTGRES_PASSWORD=kanban
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-your-secure-postgres-password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql

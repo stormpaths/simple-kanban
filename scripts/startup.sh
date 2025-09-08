@@ -8,7 +8,7 @@ echo "Waiting for database connection..."
 # Construct DATABASE_URL from environment variables
 POSTGRES_HOST=${POSTGRES_HOST:-simple-kanban-postgres-postgresql.apps.svc.cluster.local}
 POSTGRES_USER=${POSTGRES_USER:-kanban}
-POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kanban}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
 POSTGRES_DB=${POSTGRES_DB:-simple_kanban}
 POSTGRES_PORT=${POSTGRES_PORT:-5432}
 export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"

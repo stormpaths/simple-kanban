@@ -112,10 +112,12 @@
 ### US-011 (Medium Priority)
 **As a system admin, I want the container to run as non-root so it follows security best practices**
 - **Acceptance Criteria:**
-  - Container runs as user 1000:1000
-  - No privileged operations required
-  - Read-only root filesystem where possible
-  - Security context configured in Helm chart
+  - Container runs as user 1000:1000 ✅
+  - No privileged operations required ✅
+  - Read-only root filesystem where possible ✅
+  - Security context configured in Helm chart ✅
+  - Database passwords use secure secrets instead of hardcoded values ✅
+  - Environment-specific secret management patterns ✅
 
 ### US-013 (Medium Priority)
 **As a system admin, I want comprehensive observability so I can monitor application health and performance**
@@ -151,7 +153,7 @@
 - US-004: Task editing ✅
 - US-005: Task deletion ✅
 - US-006: Container deployment ✅
-- US-011: Non-root security ✅
+- US-011: Non-root security with secure password management ✅
 - US-014: Multi-board management ✅
 
 **✅ Completed (MVP):**
