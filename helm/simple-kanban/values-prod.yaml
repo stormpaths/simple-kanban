@@ -3,8 +3,8 @@ replicaCount: 1
 
 image:
   repository: registry.stormpath.net/simple-kanban
-  tag: "d145974"
-  pullPolicy: IfNotPresent
+  # tag: "latest"  # Let skaffold manage the tag dynamically
+  pullPolicy: Always
 
 resources:
   limits:

@@ -12,14 +12,14 @@ build:
 deploy:
   helm:
     releases:
-    - name: simple-kanban
+    - name: simple-kanban-dev
       chartPath: helm/simple-kanban
-      namespace: apps
+      namespace: apps-dev
       valuesFiles:
       - helm/simple-kanban/values-dev.yaml
 portForward:
 - resourceType: service
-  resourceName: simple-kanban
+  resourceName: simple-kanban-dev
   port: 8000
   localPort: 8000
 profiles:
@@ -36,27 +36,6 @@ profiles:
   deploy:
     helm:
       releases:
-      - name: simple-kanban-postgres
-        remoteChart: bitnami/postgresql
-        version: "16.7.11"
-        namespace: apps
-        setValues:
-          auth.existingSecret: simple-kanban-postgres-secret
-          auth.secretKeys.adminPasswordKey: postgres-password
-          auth.secretKeys.userPasswordKey: password
-          auth.username: kanban
-          auth.database: simple_kanban
-          primary.persistence.size: 2Gi
-          metrics.enabled: true
-      - name: simple-kanban-redis
-        remoteChart: bitnami/redis
-        version: "21.2.3"
-        namespace: apps
-        setValues:
-          auth.existingSecret: simple-kanban-redis-secret
-          auth.existingSecretPasswordKey: redis-password
-          master.persistence.size: 1Gi
-          metrics.enabled: true
       - name: simple-kanban
         chartPath: helm/simple-kanban
         namespace: apps
