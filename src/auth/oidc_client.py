@@ -58,7 +58,7 @@ class OIDCClient:
             "response_type": "code",
             "state": state,
             "access_type": "offline",  # For Google to get refresh token
-            "prompt": "consent"  # Force consent screen to get refresh token
+            # Removed "prompt": "consent" to allow Google to remember user consent
         }
         
         return f"{authorization_endpoint}?{urlencode(params)}"
