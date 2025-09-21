@@ -9,6 +9,7 @@ from .auth import *
 from .board import *
 from .column import *
 from .task import *
+from .group import *
 from .common import *
 
 __all__ = [
@@ -25,6 +26,11 @@ __all__ = [
     
     # Task schemas
     "TaskCreate", "TaskUpdate", "TaskMove", "TaskResponse",
+    
+    # Group schemas
+    "GroupCreate", "GroupUpdate", "GroupResponse", "GroupListResponse",
+    "UserGroupCreate", "UserGroupUpdate", "UserGroupResponse", "GroupRole",
+    "GroupMembershipRequest", "GroupMembershipResponse", "UserInfo",
     
     # Common schemas
     "HealthResponse", "MessageRequest", "MessageResponse"

@@ -23,7 +23,8 @@ import logging
 import os
 
 from .database import create_tables
-from .api import boards, columns, tasks, auth, oidc, task_comments, admin
+from .migrations.group_migration import run_group_migrations
+from .api import boards, columns, tasks, auth, oidc, task_comments, admin, groups
 
 # Configure logging
 log_level = logging.DEBUG if settings.debug else logging.INFO
@@ -89,6 +90,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(oidc.router, prefix="/api")
+app.include_router(groups.router, prefix="/api")
 app.include_router(boards.router, prefix="/api")
 app.include_router(columns.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
@@ -103,10 +105,14 @@ if os.path.exists(static_dir):
 # Create database tables on startup
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database tables on startup."""
+    """Initialize database tables and run migrations on startup."""
     logger.info("Creating database tables...")
     create_tables()
     logger.info("Database tables created successfully")
+    
+    logger.info("Running group management migrations...")
+    run_group_migrations()
+    logger.info("Group management migrations completed")
 
 
 @app.get("/")
