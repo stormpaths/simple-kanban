@@ -10,6 +10,7 @@ from .board import *
 from .column import *
 from .task import *
 from .group import *
+from .api_key import *
 from .common import *
 
 __all__ = [
@@ -31,6 +32,10 @@ __all__ = [
     "GroupCreate", "GroupUpdate", "GroupResponse", "GroupListResponse",
     "UserGroupCreate", "UserGroupUpdate", "UserGroupResponse", "GroupRole",
     "GroupMembershipRequest", "GroupMembershipResponse", "UserInfo",
+    
+    # API Key schemas
+    "ApiKeyCreate", "ApiKeyUpdate", "ApiKeyResponse", "ApiKeyCreateResponse",
+    "ApiKeyListResponse", "ApiKeyUsageStats", "ApiKeyScope",
     
     # Common schemas
     "HealthResponse", "MessageRequest", "MessageResponse"

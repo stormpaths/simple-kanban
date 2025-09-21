@@ -5,6 +5,7 @@ from .base import Base, TimestampMixin
 from .user import User
 from .oidc_provider import OIDCProvider
 from .group import Group, UserGroup, GroupRole
+from .api_key import ApiKey, ApiKeyScope
 from .board import Board
 from .column import Column
 from .task import Task
@@ -19,6 +20,8 @@ __all__ = [
     "Group",
     "UserGroup", 
     "GroupRole",
+    "ApiKey",
+    "ApiKeyScope",
     "Board",
     "Column",
     "Task",

@@ -24,7 +24,8 @@ import os
 
 from .database import create_tables
 from .migrations.group_migration import run_group_migrations
-from .api import boards, columns, tasks, auth, oidc, task_comments, admin, groups
+from .api import boards, columns, tasks, auth, oidc, task_comments, admin, groups, api_keys
+from .auth.dependencies import require_api_scope
 
 # Configure logging
 log_level = logging.DEBUG if settings.debug else logging.INFO
@@ -90,6 +91,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(oidc.router, prefix="/api")
+app.include_router(api_keys.router, prefix="/api")
 app.include_router(groups.router, prefix="/api")
 app.include_router(boards.router, prefix="/api")
 app.include_router(columns.router, prefix="/api")
@@ -170,6 +172,30 @@ async def metrics():
         "uptime_seconds": 0,
         "memory_usage_mb": 0
     }
+
+
+@app.get("/secure-docs")
+async def secure_docs(user = Depends(require_api_scope("docs"))):
+    """
+    Secure API documentation endpoint.
+    
+    Requires authentication with 'docs' scope API key or valid JWT token.
+    Redirects to the standard docs page after authentication.
+    """
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/secure-redoc")
+async def secure_redoc(user = Depends(require_api_scope("docs"))):
+    """
+    Secure ReDoc documentation endpoint.
+    
+    Requires authentication with 'docs' scope API key or valid JWT token.
+    Redirects to the standard redoc page after authentication.
+    """
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/redoc")
 
 if __name__ == "__main__":
     import uvicorn

@@ -38,6 +38,9 @@ class User(Base, TimestampMixin):
     group_memberships: Mapped[List["UserGroup"]] = relationship("UserGroup", back_populates="user", cascade="all, delete-orphan")
     created_groups: Mapped[List["Group"]] = relationship("Group", foreign_keys="Group.created_by")
     
+    # API key relationships
+    api_keys: Mapped[List["ApiKey"]] = relationship("ApiKey", back_populates="user", cascade="all, delete-orphan")
+    
     # Future relationships for OIDC providers
     # oidc_providers: Mapped[List["OIDCProvider"]] = relationship("OIDCProvider", back_populates="user")
     
