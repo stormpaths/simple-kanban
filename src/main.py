@@ -35,13 +35,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
+# Initialize FastAPI app with disabled default docs
 app = FastAPI(
     title="Simple Kanban Board",
     description="Self-hosted kanban board with drag-and-drop functionality",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url=None,  # Disable default docs
+    redoc_url=None  # Disable default redoc
 )
 
 # Add exception handler for validation errors (422)
@@ -174,28 +174,43 @@ async def metrics():
     }
 
 
-@app.get("/secure-docs")
+@app.get("/docs")
 async def secure_docs(user = Depends(require_api_scope("docs"))):
     """
     Secure API documentation endpoint.
     
     Requires authentication with 'docs' scope API key or valid JWT token.
-    Redirects to the standard docs page after authentication.
     """
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/docs")
+    from fastapi.openapi.docs import get_swagger_ui_html
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=f"{app.title} - Swagger UI",
+        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
+    )
 
 
-@app.get("/secure-redoc")
+@app.get("/redoc")
 async def secure_redoc(user = Depends(require_api_scope("docs"))):
     """
     Secure ReDoc documentation endpoint.
     
     Requires authentication with 'docs' scope API key or valid JWT token.
-    Redirects to the standard redoc page after authentication.
     """
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/redoc")
+    from fastapi.openapi.docs import get_redoc_html
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title=f"{app.title} - ReDoc"
+    )
+
+
+@app.get("/openapi.json")
+async def secure_openapi(user = Depends(require_api_scope("docs"))):
+    """
+    Secure OpenAPI schema endpoint.
+    
+    Requires authentication with 'docs' scope API key or valid JWT token.
+    """
+    return app.openapi()
 
 if __name__ == "__main__":
     import uvicorn
