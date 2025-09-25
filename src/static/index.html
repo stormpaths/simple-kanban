@@ -132,6 +132,10 @@
                                     <i class="fas fa-user-cog"></i>
                                     Profile
                                 </a>
+                                <a href="#" id="api-keys-menu">
+                                    <i class="fas fa-key"></i>
+                                    API Keys
+                                </a>
                                 <a href="/admin" id="admin-panel" style="display: none;">
                                     <i class="fas fa-users-cog"></i>
                                     Admin Panel
@@ -271,6 +275,141 @@
         </div>
     </div>
 
+    <!-- API Keys Modal -->
+    <div id="api-keys-modal" class="modal">
+        <div class="modal-content api-keys-modal-content">
+            <div class="modal-header">
+                <h3>API Keys Management</h3>
+                <button class="modal-close" id="api-keys-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="api-keys-section">
+                    <div class="section-header">
+                        <h4>Your API Keys</h4>
+                        <button class="btn btn-primary" id="create-api-key-btn">
+                            <i class="fas fa-plus"></i>
+                            Create New Key
+                        </button>
+                    </div>
+                    
+                    <div id="api-keys-list" class="api-keys-list">
+                        <div class="loading-state" id="api-keys-loading">
+                            <div class="spinner"></div>
+                            <p>Loading API keys...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create API Key Modal -->
+    <div id="create-api-key-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New API Key</h3>
+                <button class="modal-close" id="create-api-key-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="create-api-key-form">
+                <div class="form-group">
+                    <label for="api-key-name">Name *</label>
+                    <input type="text" id="api-key-name" name="name" required placeholder="Enter API key name">
+                </div>
+                <div class="form-group">
+                    <label for="api-key-description">Description</label>
+                    <textarea id="api-key-description" name="description" placeholder="Enter API key description (optional)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Scopes *</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scopes" value="read" checked>
+                            <span class="checkmark"></span>
+                            Read - View boards, tasks, and groups
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scopes" value="write">
+                            <span class="checkmark"></span>
+                            Write - Create and modify boards, tasks, and groups
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scopes" value="docs">
+                            <span class="checkmark"></span>
+                            Docs - Access API documentation
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scopes" value="admin">
+                            <span class="checkmark"></span>
+                            Admin - Full administrative access
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="api-key-expires">Expires In</label>
+                    <select id="api-key-expires" name="expires_in_days">
+                        <option value="">Never expires</option>
+                        <option value="7">7 days</option>
+                        <option value="30" selected>30 days</option>
+                        <option value="90">90 days</option>
+                        <option value="365">1 year</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="create-api-key-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="create-api-key-submit">Create API Key</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- API Key Created Modal -->
+    <div id="api-key-created-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>API Key Created Successfully</h3>
+                <button class="modal-close" id="api-key-created-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="api-key-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p><strong>Important:</strong> This is the only time you'll see this key. Store it securely!</p>
+                </div>
+                <div class="api-key-display">
+                    <label>Your API Key:</label>
+                    <div class="api-key-value">
+                        <input type="text" id="created-api-key-value" readonly>
+                        <button class="btn btn-secondary" id="copy-api-key-btn" title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="api-key-info">
+                    <div class="info-row">
+                        <span class="label">Name:</span>
+                        <span id="created-key-name"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Scopes:</span>
+                        <span id="created-key-scopes"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Expires:</span>
+                        <span id="created-key-expires"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="api-key-created-done">Done</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification -->
     <div id="notification" class="notification">
         <div class="notification-content">
@@ -284,6 +423,7 @@
     <script src="/static/theme.js"></script>
     <script src="/static/debug.js"></script>
     <script src="/static/auth.js"></script>
+    <script src="/static/api-keys.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>
