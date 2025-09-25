@@ -129,12 +129,7 @@ class ApiKeysManager {
         if (loadingElement) loadingElement.style.display = 'block';
 
         try {
-            const response = await fetch('/api/api-keys/', {
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await this.authenticatedFetch('/api/api-keys/');
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -304,12 +299,8 @@ class ApiKeysManager {
         }
 
         try {
-            const response = await fetch('/api/api-keys/', {
+            const response = await this.authenticatedFetch('/api/api-keys/', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify(data)
             });
 
@@ -377,12 +368,8 @@ class ApiKeysManager {
 
     async toggleApiKey(keyId, enable) {
         try {
-            const response = await fetch(`/api/api-keys/${keyId}`, {
+            const response = await this.authenticatedFetch(`/api/api-keys/${keyId}`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({ is_active: enable })
             });
 
@@ -405,12 +392,8 @@ class ApiKeysManager {
         }
 
         try {
-            const response = await fetch(`/api/api-keys/${keyId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
-                    'Content-Type': 'application/json'
-                }
+            const response = await this.authenticatedFetch(`/api/api-keys/${keyId}`, {
+                method: 'DELETE'
             });
 
             if (!response.ok) {
@@ -443,11 +426,84 @@ class ApiKeysManager {
     }
 
     showSuccess(message) {
-        showNotification(message, 'success');
+        this.showNotification(message, 'success');
     }
 
     showError(message) {
-        showNotification(message, 'error');
+        this.showNotification(message, 'error');
+    }
+
+    showNotification(message, type = 'success') {
+        // Try to use the global kanban app's notification system
+        if (window.kanbanApp && window.kanbanApp.showNotification) {
+            window.kanbanApp.showNotification(message, type);
+            return;
+        }
+
+        // Fallback: implement our own notification system
+        const notification = document.getElementById('notification');
+        const messageEl = document.getElementById('notification-message');
+        
+        if (!notification || !messageEl) {
+            // Ultimate fallback: use alert
+            alert(message);
+            return;
+        }
+
+        messageEl.textContent = message;
+        notification.className = `notification ${type === 'error' ? 'notification-error' : 'notification-success'}`;
+        notification.classList.add('show');
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 5000);
+    }
+
+    async authenticatedFetch(url, options = {}) {
+        // Use the global auth manager if available
+        if (window.authManager && window.authManager.authenticatedFetch) {
+            return await window.authManager.authenticatedFetch(url, options);
+        }
+
+        // Fallback: try to get token manually
+        const token = this.getAuthToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        return fetch(url, {
+            ...options,
+            headers,
+            credentials: 'include'
+        });
+    }
+
+    getAuthToken() {
+        // Try to get from global auth manager first
+        if (window.authManager && window.authManager.token) {
+            return window.authManager.token;
+        }
+
+        // Fallback: try localStorage
+        const token = localStorage.getItem('access_token');
+        if (token) return token;
+        
+        // Fallback: try cookies
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'access_token') {
+                return value;
+            }
+        }
+        
+        return null;
     }
 
     escapeHtml(text) {
@@ -461,21 +517,3 @@ class ApiKeysManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.apiKeysManager = new ApiKeysManager();
 });
-
-// Helper function to get auth token (should be available from auth.js)
-function getAuthToken() {
-    // First try to get from localStorage (JWT)
-    const token = localStorage.getItem('access_token');
-    if (token) return token;
-    
-    // Fallback to cookie
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'access_token') {
-            return value;
-        }
-    }
-    
-    return null;
-}
