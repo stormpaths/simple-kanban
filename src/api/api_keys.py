@@ -82,7 +82,8 @@ async def create_api_key(
     # Calculate expiration
     expires_at = None
     if key_data.expires_in_days:
-        expires_at = datetime.utcnow() + timedelta(days=key_data.expires_in_days)
+        from datetime import timezone
+        expires_at = datetime.now(timezone.utc) + timedelta(days=key_data.expires_in_days)
     
     # Convert scopes to string
     scopes_str = ",".join([scope.value for scope in key_data.scopes])
@@ -261,7 +262,9 @@ async def get_api_key_stats(
     # Calculate statistics
     total_keys = len(api_keys)
     active_keys = sum(1 for key in api_keys if key.is_active and key.is_valid())
-    expired_keys = sum(1 for key in api_keys if key.expires_at and key.expires_at < datetime.utcnow())
+    from datetime import timezone
+    now = datetime.now(timezone.utc)
+    expired_keys = sum(1 for key in api_keys if key.expires_at and key.expires_at < now)
     
     # Find most used key
     most_used_key = None

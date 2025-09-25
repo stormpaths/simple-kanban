@@ -94,8 +94,11 @@ class ApiKey(Base, TimestampMixin):
         if not self.is_active:
             return False
             
-        if self.expires_at and datetime.utcnow() > self.expires_at:
-            return False
+        if self.expires_at:
+            from datetime import timezone
+            now = datetime.now(timezone.utc)
+            if now > self.expires_at:
+                return False
             
         return True
     
@@ -111,7 +114,8 @@ class ApiKey(Base, TimestampMixin):
     
     def record_usage(self) -> None:
         """Record that this API key was used."""
-        self.last_used_at = datetime.utcnow()
+        from datetime import timezone
+        self.last_used_at = datetime.now(timezone.utc)
         self.usage_count += 1
     
     def __repr__(self) -> str:
