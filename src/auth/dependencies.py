@@ -112,9 +112,11 @@ async def authenticate_api_key(
     """
     Authenticate using API key and return user and API key.
     
+    Uses raw asyncpg queries to avoid SQLAlchemy MissingGreenlet issues.
+    
     Args:
         credentials: Bearer token credentials
-        db: Database session
+        db: Database session (unused, kept for compatibility)
         required_scope: Optional scope requirement
         
     Returns:
@@ -123,7 +125,17 @@ async def authenticate_api_key(
     Raises:
         HTTPException: If authentication fails
     """
+    import logging
+    import os
+    import asyncpg
+    from datetime import datetime, timezone
+    
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"[API_KEY_AUTH] Attempting to authenticate API key: {credentials.credentials[:20]}...")
+    
     if not credentials.credentials.startswith("sk_"):
+        logger.warning(f"[API_KEY_AUTH] Invalid API key format: {credentials.credentials[:10]}...")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key format",
@@ -132,49 +144,168 @@ async def authenticate_api_key(
     
     # Hash the provided key for lookup
     key_hash = ApiKey.hash_key(credentials.credentials)
+    logger.info(f"[API_KEY_AUTH] Key hash: {key_hash}")
     
-    # Find the API key in database
-    result = await db.execute(
-        select(ApiKey)
-        .where(ApiKey.key_hash == key_hash)
-        .options(selectinload(ApiKey.user))
-    )
-    api_key = result.scalar_one_or_none()
-    
-    if not api_key:
+    # Get database connection info from environment
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        logger.error("[API_KEY_AUTH] DATABASE_URL not found in environment")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database configuration error"
         )
     
-    # Check if API key is valid
-    if not api_key.is_valid():
+    try:
+        # Parse database URL for asyncpg connection
+        # Format: postgresql://user:password@host:port/database
+        if database_url.startswith("postgresql://"):
+            # Extract connection parameters
+            import urllib.parse
+            parsed = urllib.parse.urlparse(database_url)
+            
+            # Connect directly with asyncpg
+            conn = await asyncpg.connect(
+                host=parsed.hostname,
+                port=parsed.port or 5432,
+                user=parsed.username,
+                password=parsed.password,
+                database=parsed.path[1:]  # Remove leading slash
+            )
+            
+            try:
+                # Find the API key with user information
+                api_key_row = await conn.fetchrow("""
+                    SELECT ak.id, ak.name, ak.description, ak.key_hash, ak.key_prefix,
+                           ak.user_id, ak.scopes, ak.expires_at, ak.is_active,
+                           ak.last_used_at, ak.usage_count, ak.created_at, ak.updated_at,
+                           u.id as user_id, u.username, u.email, u.full_name,
+                           u.is_active as user_is_active, u.is_admin, u.is_verified
+                    FROM api_keys ak
+                    JOIN users u ON ak.user_id = u.id
+                    WHERE ak.key_hash = $1
+                """, key_hash)
+                
+                if not api_key_row:
+                    logger.warning(f"[API_KEY_AUTH] API key not found in database for hash: {key_hash}")
+                    
+                    # Debug: Check if any API keys exist
+                    count = await conn.fetchval("SELECT COUNT(*) FROM api_keys")
+                    logger.info(f"[API_KEY_AUTH] Total API keys in database: {count}")
+                    
+                    if count > 0:
+                        sample_prefixes = await conn.fetch("SELECT key_prefix FROM api_keys LIMIT 3")
+                        logger.info(f"[API_KEY_AUTH] Sample key prefixes: {[row['key_prefix'] for row in sample_prefixes]}")
+                    
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid API key",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+                
+                logger.info(f"[API_KEY_AUTH] Found API key: ID={api_key_row['id']}, Name={api_key_row['name']}, Active={api_key_row['is_active']}")
+                
+                # Check if API key is active
+                if not api_key_row['is_active']:
+                    logger.warning(f"[API_KEY_AUTH] API key is inactive")
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="API key is inactive or expired",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+                
+                # Check if API key is expired
+                if api_key_row['expires_at']:
+                    now = datetime.now(timezone.utc)
+                    if now > api_key_row['expires_at']:
+                        logger.warning(f"[API_KEY_AUTH] API key has expired: {api_key_row['expires_at']}")
+                        raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="API key is inactive or expired",
+                            headers={"WWW-Authenticate": "Bearer"},
+                        )
+                
+                # Check scope if required
+                if required_scope:
+                    scopes = api_key_row['scopes'].split(',') if api_key_row['scopes'] else []
+                    scopes = [s.strip() for s in scopes]
+                    
+                    # Admin scope grants all permissions
+                    if required_scope not in scopes and 'admin' not in scopes:
+                        logger.warning(f"[API_KEY_AUTH] API key missing required scope: {required_scope}, has: {scopes}")
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"API key does not have required scope: {required_scope}",
+                        )
+                
+                # Check if user is active
+                if not api_key_row['user_is_active']:
+                    logger.warning(f"[API_KEY_AUTH] User is inactive: {api_key_row['username']}")
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="User account is inactive"
+                    )
+                
+                logger.info(f"[API_KEY_AUTH] Authentication successful for user: {api_key_row['username']}")
+                
+                # Record usage
+                await conn.execute("""
+                    UPDATE api_keys 
+                    SET last_used_at = $1, usage_count = usage_count + 1, updated_at = $1
+                    WHERE id = $2
+                """, datetime.now(timezone.utc), api_key_row['id'])
+                
+                # Create User and ApiKey objects for return
+                user = User(
+                    id=api_key_row['user_id'],
+                    username=api_key_row['username'],
+                    email=api_key_row['email'],
+                    full_name=api_key_row['full_name'],
+                    is_active=api_key_row['user_is_active'],
+                    is_admin=api_key_row['is_admin'],
+                    is_verified=api_key_row['is_verified']
+                )
+                
+                api_key = ApiKey(
+                    id=api_key_row['id'],
+                    name=api_key_row['name'],
+                    description=api_key_row['description'],
+                    key_hash=api_key_row['key_hash'],
+                    key_prefix=api_key_row['key_prefix'],
+                    user_id=api_key_row['user_id'],
+                    scopes=api_key_row['scopes'],
+                    expires_at=api_key_row['expires_at'],
+                    is_active=api_key_row['is_active'],
+                    last_used_at=api_key_row['last_used_at'],
+                    usage_count=api_key_row['usage_count'] + 1,  # Reflect the increment
+                    created_at=api_key_row['created_at'],
+                    updated_at=datetime.now(timezone.utc)
+                )
+                api_key.user = user
+                
+                return user, api_key
+                
+            finally:
+                await conn.close()
+                
+        else:
+            logger.error(f"[API_KEY_AUTH] Unsupported database URL format: {database_url[:20]}...")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database configuration error"
+            )
+            
+    except asyncpg.PostgresError as e:
+        logger.error(f"[API_KEY_AUTH] Database error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key is inactive or expired",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error during authentication"
         )
-    
-    # Check scope if required
-    if required_scope and not api_key.has_scope(required_scope):
+    except Exception as e:
+        logger.error(f"[API_KEY_AUTH] Unexpected error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"API key does not have required scope: {required_scope}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication error"
         )
-    
-    # Check if user is active
-    if not api_key.user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account is inactive"
-        )
-    
-    # Record usage
-    api_key.record_usage()
-    await db.commit()
-    
-    return api_key.user, api_key
 
 
 async def get_user_from_api_key_or_jwt(
@@ -202,6 +333,13 @@ async def get_user_from_api_key_or_jwt(
     Raises:
         HTTPException: If authentication fails
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"[AUTH] Authentication attempt - credentials present: {credentials is not None}")
+    if credentials:
+        logger.info(f"[AUTH] Credential type: {credentials.credentials[:10]}...")
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -210,10 +348,13 @@ async def get_user_from_api_key_or_jwt(
     
     # Try API key authentication first if credentials look like an API key
     if credentials and credentials.credentials.startswith("sk_"):
+        logger.info("[AUTH] Attempting API key authentication")
         try:
             user, _ = await authenticate_api_key(credentials, db, required_scope)
+            logger.info(f"[AUTH] API key authentication successful for user: {user.username}")
             return user
-        except HTTPException:
+        except HTTPException as e:
+            logger.warning(f"[AUTH] API key authentication failed: {e.detail}")
             raise credentials_exception
     
     # Fall back to JWT authentication

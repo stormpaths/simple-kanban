@@ -19,14 +19,8 @@ class ApiKeysManager {
     }
 
     bindEvents() {
-        // Main API Keys menu item
-        const apiKeysMenu = document.getElementById('api-keys-menu');
-        if (apiKeysMenu) {
-            apiKeysMenu.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.openApiKeysModal();
-            });
-        }
+        // Note: api-keys-menu now links directly to /static/api-keys.html
+        // No need to intercept clicks anymore
 
         // Modal close events
         this.bindModalCloseEvents();

@@ -13,7 +13,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from ..database import get_db_session
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, get_user_from_api_key_or_jwt
 from ..models.user import User
 from ..models.board import Board
 from ..models.column import Column
@@ -23,7 +23,7 @@ from ..schemas.admin import UserStatsResponse, UserUpdateRequest
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
+async def get_admin_user(current_user: User = Depends(get_user_from_api_key_or_jwt)) -> User:
     """
     Dependency to ensure the current user is an admin.
     Initially allows user ID 1, later will check is_admin flag.
@@ -103,13 +103,13 @@ async def get_admin_stats(
     total_boards_result = await db.execute(select(func.count(Board.id)))
     total_boards = total_boards_result.scalar()
     
+    # Get total tasks count
     total_tasks_result = await db.execute(select(func.count(Task.id)))
     total_tasks = total_tasks_result.scalar()
     
     return {
         "total_users": total_users,
         "active_users": active_users,
-        "inactive_users": total_users - active_users,
         "total_boards": total_boards,
         "total_tasks": total_tasks
     }

@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta7
+apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: simple-kanban
@@ -32,6 +32,11 @@ profiles:
         namespace: apps-dev
         valuesFiles:
         - helm/simple-kanban/values-dev.yaml
+      hooks:
+        after:
+        - host:
+            command: ["./scripts/post-deploy-test.sh", "dev", "full", "soft"]
+            os: [darwin, linux]
 - name: prod
   deploy:
     helm:
@@ -41,3 +46,17 @@ profiles:
         namespace: apps
         valuesFiles:
         - helm/simple-kanban/values-prod.yaml
+      hooks:
+        after:
+        - host:
+            command: ["./scripts/post-deploy-test.sh", "prod", "full", "hard"]
+            os: [darwin, linux]
+- name: feature
+  deploy:
+    helm:
+      releases:
+      - name: simple-kanban-dev
+        chartPath: helm/simple-kanban
+        namespace: apps-dev
+        valuesFiles:
+        - helm/simple-kanban/values-dev.yaml

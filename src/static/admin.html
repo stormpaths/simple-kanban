@@ -196,21 +196,57 @@
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <div class="admin-panel">
-            <div class="admin-header">
-                <h1><i class="fas fa-user-shield"></i> Admin Panel</h1>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-nav-left">
+                    <a href="/" class="home-btn" title="Back to Boards">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    <h1 class="app-title">
+                        <i class="fas fa-user-shield"></i>
+                        Admin Panel
+                    </h1>
+                </div>
                 <div class="header-actions">
                     <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
                         <i class="fas fa-moon"></i>
                     </button>
-                    <button onclick="goToKanban()" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Kanban
-                    </button>
+                    <div class="user-menu">
+                        <button class="btn btn-secondary" id="user-menu-btn">
+                            <i class="fas fa-user"></i>
+                            <span id="user-name">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="user-dropdown" class="user-dropdown" style="display: none;">
+                            <a href="#" id="user-profile">
+                                <i class="fas fa-user-cog"></i>
+                                Profile
+                            </a>
+                            <a href="/static/api-keys.html" id="api-keys-menu">
+                                <i class="fas fa-key"></i>
+                                API Keys
+                            </a>
+                            <a href="/static/groups.html" id="groups-menu">
+                                <i class="fas fa-users"></i>
+                                Groups
+                            </a>
+                            <a href="#" id="user-logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
-        
-        <div id="error-message" class="error" style="display: none;"></div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="admin-container">
+                <div class="admin-panel">
+                    <div id="error-message" class="error" style="display: none;"></div>
         
         <div class="stats-grid">
             <div class="stat-card">
@@ -256,26 +292,25 @@
 
         async function loadAdminData() {
             try {
-                // First check if we have a token, if not try cookie-based auth
-                const token = localStorage.getItem('token');
+                // Check for authentication tokens (JWT or API key)
+                const jwtToken = localStorage.getItem('token');
+                const apiKey = localStorage.getItem('api_key');
                 
-                // Try to get current user to verify authentication
-                const authResponse = await fetch('/api/auth/me', {
-                    headers: token ? {
-                        'Authorization': `Bearer ${token}`
-                    } : {},
-                    credentials: 'include' // Include cookies for OIDC auth
-                });
+                // Determine which token to use
+                const authToken = apiKey || jwtToken;
                 
-                if (!authResponse.ok) {
+                if (!authToken) {
+                    console.log('No authentication token found');
                     window.location.href = '/';
                     return;
                 }
+                
+                console.log('Using authentication:', apiKey ? 'API Key' : 'JWT Token');
 
-                // Load stats
+                // Load stats directly (admin endpoints support API key auth)
                 const statsResponse = await fetch('/api/admin/stats', {
-                    headers: token ? {
-                        'Authorization': `Bearer ${token}`
+                    headers: authToken ? {
+                        'Authorization': `Bearer ${authToken}`
                     } : {},
                     credentials: 'include'
                 });
@@ -289,8 +324,8 @@
 
                 // Load users
                 const usersResponse = await fetch('/api/admin/users', {
-                    headers: token ? {
-                        'Authorization': `Bearer ${token}`
+                    headers: authToken ? {
+                        'Authorization': `Bearer ${authToken}`
                     } : {},
                     credentials: 'include'
                 });
@@ -451,12 +486,6 @@
                 errorDiv.style.display = 'none';
             }, 5000);
         }
-
-        function goToKanban() {
-            window.location.href = '/';
-        }
-
-        // Theme toggle functionality
         function initTheme() {
             const themeToggle = document.getElementById('theme-toggle');
             const themeIcon = themeToggle.querySelector('i');
@@ -481,7 +510,60 @@
         document.addEventListener('DOMContentLoaded', () => {
             initTheme();
             loadAdminData();
+            
+            // User menu functionality
+            const userMenuBtn = document.getElementById('user-menu-btn');
+            const userDropdown = document.getElementById('user-dropdown');
+            const userLogout = document.getElementById('user-logout');
+
+            if (userMenuBtn) {
+                userMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (userDropdown) {
+                        userDropdown.style.display = userDropdown.style.display === 'none' ? 'block' : 'none';
+                    }
+                });
+            }
+
+            if (userLogout) {
+                userLogout.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/';
+                });
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                if (userDropdown) {
+                    userDropdown.style.display = 'none';
+                }
+            });
+
+            // Set user name
+            const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+            if (token) {
+                fetch('/api/auth/me', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                })
+                .then(response => response.ok ? response.json() : null)
+                .then(user => {
+                    if (user) {
+                        const userNameEl = document.getElementById('user-name');
+                        if (userNameEl) {
+                            userNameEl.textContent = user.full_name || user.username || 'User';
+                        }
+                    }
+                })
+                .catch(console.error);
+            }
         });
     </script>
+                </div>
+            </div>
+        </main>
+    </div>
 </body>
 </html>

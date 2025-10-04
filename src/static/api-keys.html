@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Keys Management - Simple Kanban Board</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        // Apply theme immediately to prevent flash
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            min-height: 100vh;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .admin-panel {
+            background: var(--backdrop-blur);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px var(--shadow-light);
+            border: 1px solid var(--border-primary);
+            min-width: 800px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-nav-left">
+                    <a href="/" class="home-btn" title="Back to Boards">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    <h1 class="app-title">
+                        <i class="fas fa-key"></i>
+                        API Keys Management
+                    </h1>
+                </div>
+                <div class="header-actions">
+                    <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="user-menu">
+                        <button class="btn btn-secondary" id="user-menu-btn">
+                            <i class="fas fa-user"></i>
+                            <span id="user-name">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="user-dropdown" class="user-dropdown" style="display: none;">
+                            <a href="#" id="user-profile">
+                                <i class="fas fa-user-cog"></i>
+                                Profile
+                            </a>
+                            <a href="/static/groups.html" id="groups-menu">
+                                <i class="fas fa-users"></i>
+                                Groups
+                            </a>
+                            <a href="/admin" id="admin-panel" style="display: none;">
+                                <i class="fas fa-users-cog"></i>
+                                Admin Panel
+                            </a>
+                            <a href="#" id="user-logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="admin-container">
+                <div class="admin-panel">
+                <!-- API Keys Overview -->
+                <div class="page-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <h2>Your API Keys</h2>
+                            <p class="section-description">Manage API keys for programmatic access to your boards and groups</p>
+                        </div>
+                        <button class="btn btn-primary" id="create-api-key-btn">
+                            <i class="fas fa-plus"></i>
+                            Create API Key
+                        </button>
+                    </div>
+
+                    <div id="api-keys-container" class="api-keys-container">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading API keys...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Usage Statistics -->
+                <div class="page-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <h2>Usage Statistics</h2>
+                            <p class="section-description">Monitor your API key usage and activity</p>
+                        </div>
+                    </div>
+
+                    <div id="api-stats-container" class="stats-container">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading statistics...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Documentation -->
+                <div class="page-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <h2>API Documentation</h2>
+                            <p class="section-description">Learn how to use the Simple Kanban API</p>
+                        </div>
+                        <a href="/docs" class="btn btn-outline" target="_blank">
+                            <i class="fas fa-external-link-alt"></i>
+                            View Full Documentation
+                        </a>
+                    </div>
+
+                    <div class="api-docs-preview">
+                        <div class="docs-section">
+                            <h3>Quick Start</h3>
+                            <p>Use your API key to authenticate requests:</p>
+                            <div class="code-block">
+                                <code>curl -H "Authorization: Bearer YOUR_API_KEY" https://kanban.stormpath.dev/api/boards/</code>
+                                <button class="copy-btn" onclick="copyToClipboard(this)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="docs-section">
+                            <h3>Available Endpoints</h3>
+                            <div class="endpoints-grid">
+                                <div class="endpoint-item">
+                                    <span class="method get">GET</span>
+                                    <span class="path">/api/boards/</span>
+                                    <span class="description">List all boards</span>
+                                </div>
+                                <div class="endpoint-item">
+                                    <span class="method post">POST</span>
+                                    <span class="path">/api/boards/</span>
+                                    <span class="description">Create new board</span>
+                                </div>
+                                <div class="endpoint-item">
+                                    <span class="method get">GET</span>
+                                    <span class="path">/api/groups/</span>
+                                    <span class="description">List all groups</span>
+                                </div>
+                                <div class="endpoint-item">
+                                    <span class="method post">POST</span>
+                                    <span class="path">/api/groups/</span>
+                                    <span class="description">Create new group</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create API Key Modal -->
+        <div id="create-api-key-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create New API Key</h3>
+                    <button class="modal-close" id="create-api-key-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-api-key-form">
+                        <div class="form-group">
+                            <label for="api-key-name">Key Name</label>
+                            <input type="text" id="api-key-name" name="name" required 
+                                   placeholder="Enter a descriptive name" maxlength="255">
+                        </div>
+                        <div class="form-group">
+                            <label for="api-key-description">Description (Optional)</label>
+                            <textarea id="api-key-description" name="description" 
+                                      placeholder="Describe what this key will be used for" 
+                                      maxlength="1000" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Scopes</label>
+                            <div class="scopes-grid">
+                                <label class="scope-item">
+                                    <input type="checkbox" name="scopes" value="read" checked>
+                                    <span class="scope-label">
+                                        <i class="fas fa-eye"></i>
+                                        Read
+                                    </span>
+                                    <span class="scope-description">View boards and groups</span>
+                                </label>
+                                <label class="scope-item">
+                                    <input type="checkbox" name="scopes" value="write">
+                                    <span class="scope-label">
+                                        <i class="fas fa-edit"></i>
+                                        Write
+                                    </span>
+                                    <span class="scope-description">Create and modify content</span>
+                                </label>
+                                <label class="scope-item">
+                                    <input type="checkbox" name="scopes" value="docs">
+                                    <span class="scope-label">
+                                        <i class="fas fa-book"></i>
+                                        Docs
+                                    </span>
+                                    <span class="scope-description">Access API documentation</span>
+                                </label>
+                                <label class="scope-item">
+                                    <input type="checkbox" name="scopes" value="admin">
+                                    <span class="scope-label">
+                                        <i class="fas fa-crown"></i>
+                                        Admin
+                                    </span>
+                                    <span class="scope-description">Full administrative access</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="api-key-expires">Expires In</label>
+                            <select id="api-key-expires" name="expires_in_days">
+                                <option value="30">30 days</option>
+                                <option value="90">90 days</option>
+                                <option value="365">1 year</option>
+                                <option value="">Never expires</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-create-api-key">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Create API Key
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- Notification System -->
+        <div id="notification" class="notification">
+            <span id="notification-message"></span>
+            <button id="notification-close" class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/theme.js"></script>
+    <script src="/static/auth.js"></script>
+    <script src="/static/api-keys-page.js"></script>
+</body>
+</html>

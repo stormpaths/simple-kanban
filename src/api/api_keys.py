@@ -17,14 +17,14 @@ from ..schemas import (
     ApiKeyCreate, ApiKeyUpdate, ApiKeyResponse, ApiKeyCreateResponse,
     ApiKeyListResponse, ApiKeyUsageStats
 )
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, get_user_from_api_key_or_jwt
 
 router = APIRouter(prefix="/api-keys", tags=["api-keys"])
 
 
 @router.get("/", response_model=ApiKeyListResponse)
 async def list_api_keys(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -39,6 +39,12 @@ async def list_api_keys(
     )
     
     api_keys = result.scalars().all()
+    
+    # Debug logging
+    print(f"[API_KEYS] User {current_user.id} ({current_user.username}) requesting API keys")
+    print(f"[API_KEYS] Found {len(api_keys)} API keys in database")
+    for key in api_keys:
+        print(f"[API_KEYS] - Key ID {key.id}: {key.name} (active: {key.is_active})")
     
     # Convert to response format
     api_key_responses = []
@@ -66,7 +72,7 @@ async def list_api_keys(
 @router.post("/", response_model=ApiKeyCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_api_key(
     key_data: ApiKeyCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -128,7 +134,7 @@ async def create_api_key(
 @router.get("/{key_id}", response_model=ApiKeyResponse)
 async def get_api_key(
     key_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -167,7 +173,7 @@ async def get_api_key(
 async def update_api_key(
     key_id: int,
     key_data: ApiKeyUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -217,7 +223,7 @@ async def update_api_key(
 @router.delete("/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_api_key(
     key_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -243,7 +249,7 @@ async def delete_api_key(
 
 @router.get("/stats/usage", response_model=ApiKeyUsageStats)
 async def get_api_key_stats(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
     db: AsyncSession = Depends(get_db_session)
 ):
     """
@@ -290,15 +296,28 @@ async def get_api_key_stats(
         if key.last_used_at:
             recent_usage.append({
                 "key_name": key.name,
-                "key_prefix": key.key_prefix,
-                "last_used": key.last_used_at.isoformat(),
+                "last_used": key.last_used_at,
                 "usage_count": key.usage_count
             })
+    
+    # Calculate requests today based on last_used_at timestamps
+    from datetime import timezone, timedelta
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    requests_today = 0
+    for key in api_keys:
+        if key.last_used_at and key.last_used_at >= today_start:
+            # This is a simplified calculation - in a real system you'd track individual requests
+            # For now, we'll count keys that were used today as having at least 1 request
+            requests_today += 1
     
     return ApiKeyUsageStats(
         total_keys=total_keys,
         active_keys=active_keys,
         expired_keys=expired_keys,
         most_used_key=most_used_key,
-        recent_usage=recent_usage
+        recent_usage=recent_usage,
+        total_requests=sum(key.usage_count for key in api_keys),
+        requests_today=requests_today
     )

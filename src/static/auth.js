@@ -107,24 +107,32 @@ class AuthManager {
     }
 
     showAuthScreen() {
-        document.getElementById('auth-screen').style.display = 'flex';
-        document.getElementById('main-app').style.display = 'none';
+        const authScreen = document.getElementById('auth-screen');
+        const mainApp = document.getElementById('main-app');
+        if (authScreen) authScreen.style.display = 'flex';
+        if (mainApp) mainApp.style.display = 'none';
     }
 
     showMainApp() {
-        document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
+        const authScreen = document.getElementById('auth-screen');
+        const mainApp = document.getElementById('main-app');
+        if (authScreen) authScreen.style.display = 'none';
+        if (mainApp) mainApp.style.display = 'block';
         
         if (this.currentUser) {
-            document.getElementById('user-name').textContent = 
-                this.currentUser.full_name || this.currentUser.username || 'User';
+            const userNameEl = document.getElementById('user-name');
+            if (userNameEl) {
+                userNameEl.textContent = this.currentUser.full_name || this.currentUser.username || 'User';
+            }
             
             // Show admin panel link for user ID 1 or admin users
             const adminPanel = document.getElementById('admin-panel');
-            if (this.currentUser.id === 1 || this.currentUser.is_admin) {
-                adminPanel.style.display = 'block';
-            } else {
-                adminPanel.style.display = 'none';
+            if (adminPanel) {
+                if (this.currentUser.id === 1 || this.currentUser.is_admin) {
+                    adminPanel.style.display = 'block';
+                } else {
+                    adminPanel.style.display = 'none';
+                }
             }
         }
         

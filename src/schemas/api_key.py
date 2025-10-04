@@ -74,5 +74,7 @@ class ApiKeyUsageStats(BaseModel):
     total_keys: int
     active_keys: int
     expired_keys: int
+    total_requests: int
+    requests_today: int
     most_used_key: Optional[ApiKeyResponse]
     recent_usage: List[dict]  # Recent usage events

@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-10-04T13:57:37-07:00",
+  "duration": 41,
+  "mode": "full",
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "success": true,
+  "results": [
+    "✅ Health Check - Application responding"
+,
+    "✅ API Key Verification - Key accessible",
+    "✅ Comprehensive Authentication System - Passed (24s)",
+    "✅ API Key Authentication & Core Endpoints - Passed (4s)",
+    "✅ Admin API & Statistics - Passed (4s)",
+    "✅ Group Management & Board Sharing - Passed (8s)",
+    "✅ Static File Serving - Main page accessible",
+    "✅ API Documentation - Accessible with auth",
+    "✅ OpenAPI Schema - Accessible"
+  ]
+}

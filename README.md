@@ -1,19 +1,27 @@
 # Simple Kanban Board
 
-A self-hosted kanban board application with drag-and-drop functionality, built for complete ownership and customization.
+A self-hosted kanban board application with drag-and-drop functionality, authentication, group collaboration, and comprehensive testing - built for complete ownership and customization.
 
-## 🎉 MVP Status: COMPLETE ✅
+## 🎉 Status: PRODUCTION READY WITH COLLABORATION ✅
 
-**Current Version**: MVP 1.0 (Production Ready)  
-**Last Updated**: September 4, 2025  
+**Current Version**: v2.0 (Full-Featured Production System)  
+**Last Updated**: October 4, 2025  
 **Branch**: `kanban-main1`
+
+### 🚀 **Major Updates (October 4, 2025)**
+- ✅ **Complete Authentication System** - JWT + API keys with Google OIDC
+- ✅ **Group Collaboration** - Full team-based board sharing and management
+- ✅ **Automated Testing** - Comprehensive test battery with Skaffold integration
+- ✅ **Security Hardening** - Rate limiting, CSRF protection, security headers
+- ✅ **Admin Interface** - Complete administrative dashboard and statistics
 
 ## Overview
 
 This project provides a containerized kanban board that you fully own and control, with no vendor lock-in or licensing concerns. Built with FastAPI backend, PostgreSQL database, and modern web frontend.
 
-## ✅ Delivered MVP Features
+## ✅ Complete Feature Set (Production Ready)
 
+### 🎯 **Core Kanban Features**
 - **Complete Kanban Functionality**: Full CRUD operations for boards, columns, and tasks
 - **Drag-and-Drop**: Tasks move between columns with full persistence
 - **Task Aging**: Color-coded indicators showing "days open" (blue→green→orange→red)
@@ -22,17 +30,40 @@ This project provides a containerized kanban board that you fully own and contro
 - **Self-Hosted**: Complete Kubernetes deployment with PostgreSQL backend
 - **Data Persistence**: All changes persist correctly across page refreshes and restarts
 
-## 📋 Next Phase: Multi-User Authentication
+### 🔐 **Authentication & Authorization**
+- **JWT Authentication**: Secure token-based authentication with automatic refresh
+- **Google OIDC Integration**: Single sign-on with Google accounts
+- **API Key Management**: Programmatic access with scoped permissions
+- **Dual Authentication**: Support for both JWT tokens and API keys
+- **User Registration**: Complete signup and login workflows
 
-**Status**: Planned for Phase 2  
-**Documentation**: Complete design and 6-week implementation plan available
+### 👥 **Group Collaboration**
+- **Group Management**: Create and manage teams for collaboration
+- **Group-Owned Boards**: Boards shared with entire groups automatically
+- **Member Management**: Add/remove users from groups with role-based permissions
+- **Seamless Access**: Group boards appear alongside personal boards
+- **Access Control**: Proper authorization for group resources
 
-### Planned Features
-- **Google OIDC Integration**: Secure authentication with Google accounts
-- **Role-Based Access Control**: Owner, Editor, Viewer permissions
-- **Board Sharing**: Invite users and manage collaboration
-- **User Dashboard**: Personal board management interface
-- **Admin Interface**: System administration and user management
+### 🛡️ **Security & Hardening**
+- **Rate Limiting**: Redis-based rate limiting with memory fallback
+- **Security Headers**: CSP, HSTS, XSS protection, frame options
+- **CSRF Protection**: Token-based protection for state-changing operations
+- **JWT Security**: Enforced secure key generation and validation
+- **Input Validation**: Comprehensive request validation and sanitization
+
+### 🧪 **Testing & Quality Assurance**
+- **Automated Testing**: Comprehensive test battery with Skaffold integration
+- **Post-Deploy Validation**: Automatic testing after every deployment
+- **Multi-Environment Testing**: Different test modes for dev/prod environments
+- **API Testing**: Complete endpoint validation with authentication
+- **Group Testing**: Full collaboration workflow validation
+
+### 🔧 **Admin & Management**
+- **Admin Dashboard**: Complete administrative interface
+- **User Management**: View and manage system users
+- **Statistics**: Real-time system metrics and usage statistics
+- **API Key Administration**: Manage system-wide API access
+- **Health Monitoring**: Comprehensive health checks and status reporting
 
 ## Current Architecture
 
@@ -109,25 +140,50 @@ simple-kanban/
 ├── docs/                  # Documentation
 │   └── *.md              # Project documentation
 ├── .ai-config/           # AI workflow configuration
-├── docker-compose.monitoring.yml # Local monitoring stack
 ├── Dockerfile            # Container definition
 ├── pyproject.toml        # Python dependencies
 └── Makefile             # Development commands tests
-```
-
-## API Endpoints
+### API Endpoints
 
 ### Application
 - `GET /` - Kanban board web interface
 - `GET /health` - Health check
-- `GET /docs` - OpenAPI documentation
+- `GET /docs` - OpenAPI documentation (requires authentication)
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login (JWT)
+- `GET /api/auth/profile` - Get user profile
+- `POST /api/auth/change-password` - Change password
+- `GET /api/auth/google` - Google OIDC login
 
 ### Boards
-- `GET /api/boards/` - List all boards
-- `POST /api/boards/` - Create new board
+- `GET /api/boards/` - List accessible boards (personal + group)
+- `POST /api/boards/` - Create new board (personal or group-owned)
 - `GET /api/boards/{id}` - Get board details
 - `PUT /api/boards/{id}` - Update board
 - `DELETE /api/boards/{id}` - Delete board
+
+### Groups & Collaboration
+- `GET /api/groups/` - List user's groups
+- `POST /api/groups/` - Create new group
+- `GET /api/groups/{id}` - Get group details with members
+- `PUT /api/groups/{id}` - Update group information
+- `DELETE /api/groups/{id}` - Delete group
+- `POST /api/groups/{id}/members` - Add member to group
+- `DELETE /api/groups/{id}/members/{user_id}` - Remove member from group
+
+### API Keys
+- `GET /api/api-keys/` - List user's API keys
+- `POST /api/api-keys/` - Create new API key
+- `GET /api/api-keys/{id}` - Get API key details
+- `PUT /api/api-keys/{id}` - Update API key
+- `DELETE /api/api-keys/{id}` - Delete API key
+- `GET /api/api-keys/stats/usage` - API key usage statistics
+
+### Admin
+- `GET /api/admin/stats` - System statistics
+- `GET /api/admin/users` - List all users (admin only)
 
 ### Columns & Tasks
 - `GET /api/columns/board/{board_id}` - Get columns with tasks for a board
@@ -135,12 +191,12 @@ simple-kanban/
 - `PUT /api/tasks/{id}` - Update task
 - `POST /api/tasks/{id}/move` - Move task between columns
 - `DELETE /api/tasks/{id}` - Delete task
+- `GET /api/tasks/{id}/comments` - Get task comments
+- `POST /api/tasks/{id}/comments` - Add task comment
 
 ## Configuration
 
 ### Environment Variables
-
-- `ENVIRONMENT`: Runtime environment (development/production)
 - `LOG_LEVEL`: Logging level (DEBUG/INFO/WARNING/ERROR)
 - `WORKERS`: Number of worker processes
 - `OTEL_SERVICE_NAME`: OpenTelemetry service name
@@ -162,6 +218,30 @@ simple-kanban/
 
 ## Testing
 
+### Automated Testing (Integrated with Skaffold)
+```bash
+# Deploy with automatic testing
+skaffold run -p dev  # Runs comprehensive test battery automatically
+
+# Manual test execution
+./scripts/test-all.sh --quick    # Quick smoke tests (~15s)
+./scripts/test-all.sh --full     # Full test battery (~45s)
+./scripts/test-all.sh --verbose  # Detailed output for debugging
+```
+
+### Test Categories
+- **Health Checks**: Application availability and responsiveness
+- **Comprehensive Authentication**: Complete JWT and API key testing suite
+  - User registration and login workflows
+  - JWT token validation and protected endpoint access
+  - API key authentication and scoped permissions
+  - Cross-authentication validation (JWT ↔ API key compatibility)
+  - Security controls and invalid authentication rejection
+- **API Endpoints**: Complete CRUD operation testing with dual authentication
+- **Group Management**: Collaboration workflow validation
+- **Admin Functions**: Administrative interface testing with proper access control
+- **Security**: Rate limiting, CSRF protection, and comprehensive access control
+
 ### Unit Tests
 ```bash
 pytest tests/ -v --cov=src
@@ -169,7 +249,19 @@ pytest tests/ -v --cov=src
 
 ### Integration Tests
 ```bash
-./test.sh
+# Authentication Testing Suite
+./scripts/test-auth-comprehensive.sh    # Complete authentication validation
+./scripts/test-auth-jwt.sh              # JWT authentication workflow
+./scripts/test-auth-registration.sh     # User registration testing
+./scripts/test-auth-endpoints.sh        # Dual auth endpoint testing
+
+# Feature Testing
+./scripts/test-api-key.sh               # API key management tests
+./scripts/test-groups.sh                # Group collaboration tests
+./scripts/test-admin.sh                 # Admin interface tests
+
+# Deployment Testing
+./scripts/post-deploy-test.sh           # Post-deployment validation
 ```
 
 ### Linting
