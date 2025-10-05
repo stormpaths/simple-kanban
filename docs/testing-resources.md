@@ -83,7 +83,7 @@ kubectl get secret simple-kanban-test-api-key -n apps-dev -o jsonpath='{.data.ap
 ```
 
 **Contents**:
-- `api-key`: `sk_hQCaGq6Wbl1n-y48zI6hKwCmAGO0ISSYDFAM-KYUuyk`
+- `api-key`: `sk_***REDACTED***` (retrieved from Kubernetes secret)
 - `key-name`: `dev`
 - `user-id`: `1` (admin user)
 - `scopes`: `read,write,docs,admin`

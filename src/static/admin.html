@@ -292,20 +292,53 @@
 
         async function loadAdminData() {
             try {
-                // Check for authentication tokens (JWT or API key)
-                const jwtToken = localStorage.getItem('token');
-                const apiKey = localStorage.getItem('api_key');
+                // First try to authenticate with cookies (like working pages)
+                let authToken = null;
+                let user = null;
                 
-                // Determine which token to use
-                const authToken = apiKey || jwtToken;
-                
-                if (!authToken) {
-                    console.log('No authentication token found');
-                    window.location.href = '/';
-                    return;
+                // Try cookie-based authentication first
+                try {
+                    const authResponse = await fetch('/api/auth/me');
+                    if (authResponse.ok) {
+                        user = await authResponse.json();
+                        console.log('Cookie auth successful for user:', user.username);
+                        
+                        // Check admin status
+                        if (!user.is_admin) {
+                            console.log('User is not admin, redirecting');
+                            window.location.href = '/';
+                            return;
+                        }
+                        
+                        // Cookie auth worked, no token needed
+                        authToken = null;
+                    } else {
+                        // Cookie auth failed, try token auth
+                        const jwtToken = localStorage.getItem('token') || localStorage.getItem('auth_token');
+                        const apiKey = localStorage.getItem('api_key');
+                        authToken = apiKey || jwtToken;
+                        
+                        if (!authToken) {
+                            console.log('No authentication token found and cookie auth failed');
+                            window.location.href = '/';
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.log('Cookie auth error, trying token auth:', error);
+                    // Try token auth as fallback
+                    const jwtToken = localStorage.getItem('token') || localStorage.getItem('auth_token');
+                    const apiKey = localStorage.getItem('api_key');
+                    authToken = apiKey || jwtToken;
+                    
+                    if (!authToken) {
+                        console.log('No authentication token found');
+                        window.location.href = '/';
+                        return;
+                    }
                 }
                 
-                console.log('Using authentication:', apiKey ? 'API Key' : 'JWT Token');
+                console.log('Using authentication:', authToken ? (authToken.startsWith('sk_') ? 'API Key' : 'JWT Token') : 'Cookie Auth');
 
                 // Load stats directly (admin endpoints support API key auth)
                 const statsResponse = await fetch('/api/admin/stats', {

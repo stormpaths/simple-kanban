@@ -9,8 +9,8 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 
-# Test API key provided by user
-TEST_API_KEY = "sk_hQCaGq6Wbl1n-y48zI6hKwCmAGO0ISSYDFAM-KYUuyk"
+# Test API key - should be retrieved from Kubernetes secret in production
+TEST_API_KEY = "sk_***REDACTED***"  # Replace with actual key from kubectl get secret
 
 async def debug_api_keys():
     """Debug API key database and authentication."""

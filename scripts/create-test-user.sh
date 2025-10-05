@@ -8,7 +8,7 @@ This script creates a new test user and generates an API key for testing purpose
 set -e
 
 # Configuration
-BASE_URL="https://kanban.stormpath.dev"
+BASE_URL="${BASE_URL:-https://localhost:8000}"
 ADMIN_API_KEY=$(kubectl get secret simple-kanban-test-api-key -n apps-dev -o jsonpath='{.data.api-key}' | base64 -d)
 
 # Colors for output
@@ -25,7 +25,8 @@ echo "=============================================="
 TIMESTAMP=$(date +%s)
 TEST_USERNAME="testuser_$TIMESTAMP"
 TEST_EMAIL="test_$TIMESTAMP@example.com"
-TEST_PASSWORD="TestPassword123!"
+# Generate secure random password for testing
+TEST_PASSWORD="$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-16)Aa1!"
 
 echo -e "\n${YELLOW}📋 Creating new test user...${NC}"
 echo "   Username: $TEST_USERNAME"

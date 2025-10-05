@@ -15,7 +15,27 @@ set -e
 # Configuration
 NAMESPACE="apps-dev"
 SECRET_NAME="simple-kanban-test-api-key"
-BASE_URL="https://kanban.stormpath.dev"
+
+# Function to get the service URL dynamically
+get_service_url() {
+    # Try to get URL from environment variable first
+    if [ -n "$BASE_URL" ]; then
+        echo "$BASE_URL"
+        return
+    fi
+    
+    # Try to get from Kubernetes ingress
+    local ingress_host=$(kubectl get ingress simple-kanban-dev -n "$NAMESPACE" -o jsonpath='{.spec.rules[0].host}' 2>/dev/null)
+    if [ -n "$ingress_host" ]; then
+        echo "https://$ingress_host"
+        return
+    fi
+    
+    # Fallback to localhost for local development
+    echo "https://localhost:8000"
+}
+
+BASE_URL=$(get_service_url)
 
 # Colors for output
 RED='\033[0;31m'
@@ -79,8 +99,42 @@ echo -e "\n${BLUE}🚀 Starting API Key Test Suite${NC}"
 # Test 1: List boards
 test_endpoint "GET" "/api/boards/" "List all boards"
 
-# Test 2: Get specific board
-test_endpoint "GET" "/api/boards/1" "Get board details"
+# Test 2: Create a test board first, then access it
+echo -e "\n${YELLOW}🧪 Testing: Create test board${NC}"
+echo "   POST /api/boards/"
+create_response=$(curl -s -w "\n%{http_code}" -X POST \
+    "$BASE_URL/api/boards/" \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"name": "API Key Test Board", "description": "Test board for API key validation"}')
+
+create_status=$(echo "$create_response" | tail -n1)
+create_body=$(echo "$create_response" | head -n -1)
+
+if [ "$create_status" = "201" ]; then
+    BOARD_ID=$(echo "$create_body" | grep -o '"id":[0-9]*' | cut -d':' -f2)
+    echo -e "   ${GREEN}✅ SUCCESS${NC} (HTTP $create_status)"
+    echo "   Created board ID: $BOARD_ID"
+    
+    # Test 3: Get the created board
+    test_endpoint "GET" "/api/boards/$BOARD_ID" "Get created board details"
+    
+    # Cleanup: Delete the test board
+    echo -e "\n${YELLOW}🧪 Cleanup: Delete test board${NC}"
+    delete_response=$(curl -s -w "\n%{http_code}" -X DELETE \
+        "$BASE_URL/api/boards/$BOARD_ID" \
+        -H "Authorization: Bearer $API_KEY")
+    delete_status=$(echo "$delete_response" | tail -n1)
+    if [ "$delete_status" = "200" ]; then
+        echo -e "   ${GREEN}✅ SUCCESS${NC} - Test board deleted"
+    else
+        echo -e "   ${YELLOW}⚠️  WARNING${NC} - Could not delete test board (HTTP $delete_status)"
+    fi
+else
+    echo -e "   ${RED}❌ FAILED${NC} (HTTP $create_status)"
+    echo "   Response: $create_body"
+    echo -e "   ${YELLOW}ℹ️  Skipping board access test${NC}"
+fi
 
 # Test 3: List API keys
 test_endpoint "GET" "/api/api-keys/" "List API keys"

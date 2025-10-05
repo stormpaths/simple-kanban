@@ -20,7 +20,7 @@ Secret Name: simple-kanban-test-api-key
 
 | Key | Value | Description |
 |-----|-------|-------------|
-| `api-key` | `sk_hQCaGq6Wbl1n-y48zI6hKwCmAGO0ISSYDFAM-KYUuyk` | The actual API key for testing |
+| `api-key` | `sk_***REDACTED***` | The actual API key for testing (stored in Kubernetes secret) |
 | `key-name` | `dev` | Human-readable name of the key |
 | `user-id` | `1` | User ID that owns this API key |
 | `scopes` | `read,write,docs,admin` | Comma-separated list of scopes |

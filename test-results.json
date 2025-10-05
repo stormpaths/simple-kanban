@@ -1,22 +1,22 @@
 {
-  "timestamp": "2025-10-04T13:57:37-07:00",
-  "duration": 41,
-  "mode": "full",
+  "timestamp": "2025-10-04T18:42:27-07:00",
+  "duration": 34,
+  "mode": "quick",
   "summary": {
-    "total": 9,
-    "passed": 9,
+    "total": 8,
+    "passed": 8,
     "failed": 0,
-    "skipped": 0
+    "skipped": 1
   },
   "success": true,
   "results": [
     "✅ Health Check - Application responding"
 ,
     "✅ API Key Verification - Key accessible",
-    "✅ Comprehensive Authentication System - Passed (24s)",
-    "✅ API Key Authentication & Core Endpoints - Passed (4s)",
+    "✅ Comprehensive Authentication System (Quick) - Passed (22s)",
+    "✅ API Key Authentication & Core Endpoints - Passed (6s)",
     "✅ Admin API & Statistics - Passed (4s)",
-    "✅ Group Management & Board Sharing - Passed (8s)",
+    "⏭️  Group Management & Board Sharing - Skipped (quick mode)",
     "✅ Static File Serving - Main page accessible",
     "✅ API Documentation - Accessible with auth",
     "✅ OpenAPI Schema - Accessible"

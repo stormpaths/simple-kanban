@@ -12,12 +12,13 @@ Usage:
 set -e
 
 # Configuration
-BASE_URL="https://kanban.stormpath.dev"
+BASE_URL="${BASE_URL:-https://localhost:8000}"
 NAMESPACE="apps-dev"
 SECRET_NAME="simple-kanban-test-api-key"
 TEST_USERNAME="endpointtest_$(date +%s)"
 TEST_EMAIL="endpointtest_$(date +%s)@example.com"
-TEST_PASSWORD="TestPassword123!"
+# Generate secure random password for testing
+TEST_PASSWORD="$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-16)Aa1!"
 
 # Colors for output
 RED='\033[0;31m'

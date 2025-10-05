@@ -16,9 +16,29 @@ set -e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_URL="https://kanban.stormpath.dev"
 NAMESPACE="apps-dev"
 SECRET_NAME="simple-kanban-test-api-key"
+
+# Function to get the service URL dynamically
+get_service_url() {
+    # Try to get URL from environment variable first
+    if [ -n "$BASE_URL" ]; then
+        echo "$BASE_URL"
+        return
+    fi
+    
+    # Try to get from Kubernetes ingress
+    local ingress_host=$(kubectl get ingress simple-kanban-dev -n "$NAMESPACE" -o jsonpath='{.spec.rules[0].host}' 2>/dev/null)
+    if [ -n "$ingress_host" ]; then
+        echo "https://$ingress_host"
+        return
+    fi
+    
+    # Fallback to localhost for local development
+    echo "https://localhost:8000"
+}
+
+BASE_URL=$(get_service_url)
 
 # Parse arguments - check both $1 and environment variable
 QUICK_MODE=false

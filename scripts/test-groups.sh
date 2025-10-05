@@ -14,7 +14,7 @@ set -e
 # Configuration
 NAMESPACE="apps-dev"
 SECRET_NAME="simple-kanban-test-api-key"
-BASE_URL="https://kanban.stormpath.dev"
+BASE_URL="${BASE_URL:-https://localhost:8000}"
 
 # Colors for output
 RED='\033[0;31m'

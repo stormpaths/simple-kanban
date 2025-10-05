@@ -16,10 +16,32 @@ Usage:
 set -e
 
 # Configuration
-BASE_URL="https://kanban.stormpath.dev"
+NAMESPACE="apps-dev"
+
+# Function to get the service URL dynamically
+get_service_url() {
+    # Try to get URL from environment variable first
+    if [ -n "$BASE_URL" ]; then
+        echo "$BASE_URL"
+        return
+    fi
+    
+    # Try to get from Kubernetes ingress
+    local ingress_host=$(kubectl get ingress simple-kanban-dev -n "$NAMESPACE" -o jsonpath='{.spec.rules[0].host}' 2>/dev/null)
+    if [ -n "$ingress_host" ]; then
+        echo "https://$ingress_host"
+        return
+    fi
+    
+    # Fallback to localhost for local development
+    echo "https://localhost:8000"
+}
+
+BASE_URL=$(get_service_url)
 TEST_USERNAME="jwttest_$(date +%s)"
 TEST_EMAIL="jwttest_$(date +%s)@example.com"
-TEST_PASSWORD="SecureTestPassword123!"
+# Generate secure random password for testing
+TEST_PASSWORD="$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-16)Aa1!"
 TEST_FULL_NAME="JWT Test User"
 
 # Colors for output
@@ -280,6 +302,20 @@ if [ -n "$CREATED_API_KEY" ]; then
         if [ -n "$APIKEY_ID" ]; then
             curl -s -X DELETE -H "Authorization: Bearer $JWT_TOKEN" "$BASE_URL/api/api-keys/$APIKEY_ID" > /dev/null
         fi
+    fi
+fi
+
+# SECURITY: Delete test user (if user deletion endpoint exists)
+if [ -n "$TEST_USER_ID" ]; then
+    echo "Attempting to delete test user (ID: $TEST_USER_ID)..."
+    # Note: User deletion endpoint may not exist - this is a security consideration
+    delete_response=$(curl -s -w "\n%{http_code}" -X DELETE -H "Authorization: Bearer $JWT_TOKEN" "$BASE_URL/api/auth/users/$TEST_USER_ID" 2>/dev/null)
+    delete_status=$(echo "$delete_response" | tail -n1)
+    if [ "$delete_status" = "204" ] || [ "$delete_status" = "200" ]; then
+        echo "✅ Test user deleted successfully"
+    else
+        echo "⚠️  Test user deletion not available (user remains: $TEST_USERNAME)"
+        echo "   Consider implementing user cleanup or using a test database"
     fi
 fi
 

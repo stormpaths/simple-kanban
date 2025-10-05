@@ -16,7 +16,7 @@ Usage:
 set -e
 
 # Configuration
-BASE_URL="https://kanban.stormpath.dev"
+BASE_URL="${BASE_URL:-https://localhost:8000}"
 TEST_BASE="regtest_$(date +%s)"
 
 # Colors for output
@@ -96,7 +96,8 @@ test_registration() {
 test_step "Successful user registration"
 VALID_USERNAME="${TEST_BASE}_valid"
 VALID_EMAIL="${TEST_BASE}_valid@example.com"
-VALID_PASSWORD="ValidPassword123!"
+# Generate secure random password for testing
+VALID_PASSWORD="$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-16)Aa1!"
 VALID_FULLNAME="Valid Test User"
 
 CREATED_USER_ID=$(test_registration "$VALID_USERNAME" "$VALID_EMAIL" "$VALID_PASSWORD" "$VALID_FULLNAME" "201" "Valid user registration")

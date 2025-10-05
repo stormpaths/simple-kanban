@@ -74,36 +74,21 @@ This project provides a containerized kanban board that you fully own and contro
 - **Data Models**: Board → Column → Task hierarchy
 
 ### Frontend Stack
-- **Technology**: Vanilla JavaScript (ES6+)
 - **Styling**: Modern CSS with Flexbox/Grid
 - **Icons**: FontAwesome integration
 - **State Management**: Class-based architecture with localStorage persistence
 
 ### Deployment Stack
 - **Containerization**: Docker with multi-stage builds
-- **Orchestration**: Kubernetes with Helm charts
-- **Development**: Skaffold for rapid iteration
-- **Database**: PostgreSQL with automated migrations
 
-## Quick Start
+### Automated Test Environment Setup
 
-### Development
+**🚀 NEW: Self-Bootstrapping Tests**
+No manual setup required! The test suite can create its own test environment:
+
 ```bash
-# Clone and setup
-git clone https://github.com/your-repo/simple-kanban.git
-cd simple-kanban
-
-# Start development environment with Skaffold
-skaffold dev --port-forward
-
-# Access application
-# Application: http://127.0.0.1:4503
-# API docs: http://127.0.0.1:4503/docs
-```
-
-### Local Monitoring Stack
-```bash
-# Start Prometheus + Grafana + AlertManager
+# Automatic bootstrap + full test suite
+./scripts/test-with-bootstrap.sh
 make monitoring-up
 
 # Access monitoring services
@@ -246,6 +231,30 @@ skaffold run -p dev  # Runs comprehensive test battery automatically
 ```bash
 pytest tests/ -v --cov=src
 ```
+
+### 🚀 **Self-Bootstrapping Test Suite (NEW)**
+No manual setup required! Tests create their own environment:
+
+```bash
+# Automatic bootstrap + full test suite
+./scripts/test-with-bootstrap.sh
+
+# Automatic bootstrap + quick tests  
+./scripts/test-with-bootstrap.sh --quick
+
+# Manual bootstrap only (if needed)
+./scripts/test-bootstrap.sh
+
+# Cleanup test environment
+./scripts/test-bootstrap.sh --cleanup-only
+```
+
+**Bootstrap Process**:
+1. ✅ Creates test user via registration
+2. ✅ Obtains JWT token through login  
+3. ✅ Creates API key using JWT authentication
+4. ✅ Stores API key in Kubernetes secret
+5. ✅ Validates complete authentication flow
 
 ### Integration Tests
 ```bash
