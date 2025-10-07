@@ -60,34 +60,35 @@ echo "Base URL: $BASE_URL"
 echo "Test Directory: $FRONTEND_TEST_DIR"
 echo ""
 
-# Check if Python virtual environment exists
-if [ ! -d "$PROJECT_ROOT/venv" ]; then
-    echo -e "${YELLOW}⚠️  No virtual environment found${NC}"
-    echo "Creating virtual environment..."
-    python3 -m venv "$PROJECT_ROOT/venv"
+# Check if Poetry is installed
+if ! command -v poetry &> /dev/null; then
+    echo -e "${RED}❌ Poetry is not installed${NC}"
+    echo "Please install Poetry: curl -sSL https://install.python-poetry.org | python3 -"
+    exit 1
 fi
 
-# Activate virtual environment
-source "$PROJECT_ROOT/venv/bin/activate"
+# Navigate to frontend test directory
+cd "$FRONTEND_TEST_DIR"
 
 # Install dependencies if needed
-if ! python -c "import playwright" 2>/dev/null; then
-    echo -e "${YELLOW}📦 Installing frontend test dependencies...${NC}"
-    pip install -q -r "$FRONTEND_TEST_DIR/requirements.txt"
+if ! poetry run python -c "import playwright" 2>/dev/null; then
+    echo -e "${YELLOW}📦 Installing frontend test dependencies with Poetry...${NC}"
+    poetry install
     
     echo -e "${YELLOW}🎭 Installing Playwright browsers...${NC}"
-    playwright install chromium
+    poetry run playwright install chromium
 fi
 
 # Parse command line arguments
 PYTEST_ARGS=""
-BROWSER_MODE="--headless"
+BROWSER_ARGS="--browser chromium"
+HEADED_MODE=""
 TEST_FILTER=""
 
 for arg in "$@"; do
     case $arg in
         --headed)
-            BROWSER_MODE="--headed"
+            HEADED_MODE="--headed"
             shift
             ;;
         --smoke)
@@ -104,7 +105,8 @@ for arg in "$@"; do
             ;;
         --debug)
             PYTEST_ARGS="$PYTEST_ARGS --pdb -s"
-            BROWSER_MODE="--headed --slowmo 1000"
+            HEADED_MODE="--headed"
+            BROWSER_ARGS="$BROWSER_ARGS --slowmo 1000"
             shift
             ;;
         --verbose)
@@ -121,14 +123,12 @@ done
 
 # Run tests
 echo -e "${BLUE}🚀 Running Frontend Tests${NC}"
-echo "Browser Mode: $BROWSER_MODE"
+echo "Browser: chromium (headless: $([ -z "$HEADED_MODE" ] && echo 'yes' || echo 'no'))"
 echo "Test Filter: ${TEST_FILTER:-all tests}"
 echo ""
 
-cd "$FRONTEND_TEST_DIR"
-
-# Run pytest with playwright
-if pytest $BROWSER_MODE $TEST_FILTER $PYTEST_ARGS; then
+# Run pytest with playwright using Poetry
+if poetry run pytest $BROWSER_ARGS $HEADED_MODE $TEST_FILTER $PYTEST_ARGS; then
     echo ""
     echo -e "${GREEN}✅ All frontend tests passed!${NC}"
     exit 0
