@@ -1,0 +1,43 @@
+# Docker ignore file for frontend tests
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Poetry
+poetry.lock
+
+# Test results
+.pytest_cache/
+test-results/
+*.xml
+*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Playwright
+playwright-report/
+test-results/
+traces/
+videos/
+screenshots/
