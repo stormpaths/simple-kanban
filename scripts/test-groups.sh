@@ -14,7 +14,26 @@ set -e
 # Configuration
 NAMESPACE="apps-dev"
 SECRET_NAME="simple-kanban-test-api-key"
-BASE_URL="${BASE_URL:-https://localhost:8000}"
+# Function to get the service URL dynamically
+get_service_url() {
+    # Try to get URL from environment variable first
+    if [ -n "$BASE_URL" ]; then
+        echo "$BASE_URL"
+        return
+    fi
+    
+    # Try to get from Kubernetes ingress
+    local ingress_host=$(kubectl get ingress simple-kanban-dev -n "$NAMESPACE" -o jsonpath='{.spec.rules[0].host}' 2>/dev/null)
+    if [ -n "$ingress_host" ]; then
+        echo "https://$ingress_host"
+        return
+    fi
+    
+    # Fallback to production URL
+    echo "https://kanban.stormpath.dev"
+}
+
+BASE_URL=$(get_service_url)
 
 # Colors for output
 RED='\033[0;31m'
@@ -82,10 +101,7 @@ echo -e "\n${BLUE}🚀 Starting Group Management Test Suite${NC}"
 # Test 1: List groups
 test_endpoint "GET" "/api/groups/" "List all groups"
 
-# Test 2: Get specific group (assuming group 1 exists)
-test_endpoint "GET" "/api/groups/1" "Get group details"
-
-# Test 3: Create new group
+# Test 2: Create new group
 test_endpoint "POST" "/api/groups/" "Create new group" \
     '{"name": "Automated Test Group", "description": "Group created by automated test"}' "201"
 
@@ -94,14 +110,14 @@ GROUP_ID=$(echo "$body" | grep -o '"id":[0-9]*' | cut -d':' -f2)
 echo "   Created Group ID: $GROUP_ID"
 
 if [ -n "$GROUP_ID" ]; then
-    # Test 4: Get the created group details
+    # Test 3: Get the created group details
     test_endpoint "GET" "/api/groups/$GROUP_ID" "Get created group details"
     
-    # Test 5: Update the created group
+    # Test 4: Update the created group
     test_endpoint "PUT" "/api/groups/$GROUP_ID" "Update created group" \
         '{"name": "Updated Test Group", "description": "Updated description"}'
     
-    # Test 6: Create a group-owned board
+    # Test 5: Create a group-owned board
     test_endpoint "POST" "/api/boards/" "Create group-owned board" \
         "{\"name\": \"Group Board Test\", \"description\": \"Board owned by group $GROUP_ID\", \"group_id\": $GROUP_ID}" "201"
     
@@ -110,7 +126,7 @@ if [ -n "$GROUP_ID" ]; then
     echo "   Created Board ID: $BOARD_ID"
     
     if [ -n "$BOARD_ID" ]; then
-        # Test 7: Access the group-owned board
+        # Test 6: Access the group-owned board
         test_endpoint "GET" "/api/boards/$BOARD_ID" "Access group-owned board"
         
         # Verify it's group-owned
@@ -121,10 +137,10 @@ if [ -n "$GROUP_ID" ]; then
         fi
     fi
     
-    # Test 8: Verify board appears in board list
+    # Test 7: Verify board appears in board list
     test_endpoint "GET" "/api/boards/" "List boards (should include group board)"
     
-    # Test 9: Test member management (add member)
+    # Test 8: Test member management (add member)
     echo -e "\n${YELLOW}🧪 Testing: Add member to group${NC}"
     response=$(curl -s -w "\n%{http_code}" -X POST \
         "$BASE_URL/api/groups/$GROUP_ID/members" \
@@ -143,7 +159,7 @@ if [ -n "$GROUP_ID" ]; then
         echo "   Response: $body"
     fi
     
-    # Test 10: Remove member from group  
+    # Test 9: Remove member from group  
     echo -e "\n${YELLOW}🧪 Testing: Remove member from group${NC}"
     response=$(curl -s -w "\n%{http_code}" -X DELETE \
         "$BASE_URL/api/groups/$GROUP_ID/members/2" \
@@ -159,10 +175,10 @@ if [ -n "$GROUP_ID" ]; then
         echo "   Response: $(echo "$response" | head -n -1)"
     fi
     
-    # Test 11: Delete the created group
+    # Test 10: Delete the created group
     test_endpoint "DELETE" "/api/groups/$GROUP_ID" "Delete created group" "" "204"
     
-    # Test 12: Verify board is no longer accessible
+    # Test 11: Verify board is no longer accessible
     echo -e "\n${YELLOW}🧪 Testing: Board access after group deletion (should fail)${NC}"
     if [ -n "$BOARD_ID" ]; then
         response=$(curl -s -w "\n%{http_code}" -X GET \
