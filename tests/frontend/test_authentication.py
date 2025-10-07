@@ -19,15 +19,15 @@ class TestAuthentication:
         page.wait_for_selector("#login-form", timeout=10000)
         
         # Fill credentials
-        page.fill("#login-username", test_username)
+        page.fill("#login-email", test_username)
         page.fill("#login-password", test_password)
         
         # Submit login
-        page.click("#login-btn")
+        page.click("#login-email-form button[type='submit']")
         
         # Verify successful login
         page.wait_for_selector("#board-select", timeout=10000)
-        expect(page.locator("#logout-btn")).to_be_visible()
+        expect(page.locator("#user-logout")).to_be_visible()
     
     def test_login_with_invalid_credentials(self, page: Page, base_url: str):
         """Test login failure with invalid credentials."""
@@ -37,11 +37,11 @@ class TestAuthentication:
         page.wait_for_selector("#login-form", timeout=10000)
         
         # Fill invalid credentials
-        page.fill("#login-username", "invalid_user")
+        page.fill("#login-email", "invalid@example.com")
         page.fill("#login-password", "wrong_password")
         
         # Submit login
-        page.click("#login-btn")
+        page.click("#login-email-form button[type='submit']")
         
         # Should show error message or stay on login page
         page.wait_for_timeout(2000)
@@ -54,10 +54,10 @@ class TestAuthentication:
         page = authenticated_page
         
         # Verify logged in
-        expect(page.locator("#logout-btn")).to_be_visible()
+        expect(page.locator("#user-logout")).to_be_visible()
         
         # Click logout
-        page.click("#logout-btn")
+        page.click("#user-logout")
         
         # Should redirect to login page
         page.wait_for_selector("#login-form", timeout=10000)
@@ -75,7 +75,7 @@ class TestAuthentication:
         
         # Should still be logged in
         page.wait_for_selector("#board-select", timeout=10000)
-        expect(page.locator("#logout-btn")).to_be_visible()
+        expect(page.locator("#user-logout")).to_be_visible()
     
     def test_protected_page_redirect(self, page: Page, base_url: str):
         """Test that accessing protected pages redirects to login."""

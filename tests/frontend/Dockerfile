@@ -21,7 +21,7 @@ COPY . .
 
 # Set environment variables
 ENV BASE_URL=https://kanban.stormpath.dev
-ENV TEST_USERNAME=testuser
+ENV TEST_USERNAME=michael@stormpath.dev
 ENV TEST_PASSWORD=TestPassword123!
 ENV PYTHONUNBUFFERED=1
 

@@ -18,8 +18,9 @@ def base_url() -> str:
 
 @pytest.fixture(scope="session")
 def test_username() -> str:
-    """Test user username."""
-    return os.getenv("TEST_USERNAME", "testuser")
+    """Test user email (used as username for login)."""
+    # Note: The login form uses email, not username
+    return os.getenv("TEST_USERNAME", "michael@stormpath.dev")
 
 
 @pytest.fixture(scope="session")
@@ -49,20 +50,20 @@ def authenticated_page(page: Page, base_url: str, test_username: str, test_passw
     # Navigate to login page
     page.goto(base_url)
     
-    # Check if already logged in (has logout button)
-    if page.locator("#logout-btn").is_visible():
+    # Check if already logged in (has user menu)
+    if page.locator("#user-logout").is_visible():
         yield page
         return
     
     # Wait for login form to be visible
     page.wait_for_selector("#login-form", timeout=10000)
     
-    # Fill in login credentials
-    page.fill("#login-username", test_username)
+    # Fill in login credentials (using email field)
+    page.fill("#login-email", test_username)
     page.fill("#login-password", test_password)
     
-    # Click login button
-    page.click("#login-btn")
+    # Submit login form
+    page.click("#login-email-form button[type='submit']")
     
     # Wait for successful login (board selector should appear)
     page.wait_for_selector("#board-select", timeout=10000)
@@ -70,8 +71,8 @@ def authenticated_page(page: Page, base_url: str, test_username: str, test_passw
     yield page
     
     # Cleanup: logout after test
-    if page.locator("#logout-btn").is_visible():
-        page.click("#logout-btn")
+    if page.locator("#user-logout").is_visible():
+        page.click("#user-logout")
 
 
 @pytest.fixture
@@ -86,11 +87,11 @@ def authenticated_context(context: BrowserContext, base_url: str, test_username:
     # Navigate and login
     page.goto(base_url)
     
-    if not page.locator("#logout-btn").is_visible():
+    if not page.locator("#user-logout").is_visible():
         page.wait_for_selector("#login-form", timeout=10000)
-        page.fill("#login-username", test_username)
+        page.fill("#login-email", test_username)
         page.fill("#login-password", test_password)
-        page.click("#login-btn")
+        page.click("#login-email-form button[type='submit']")
         page.wait_for_selector("#board-select", timeout=10000)
     
     page.close()
