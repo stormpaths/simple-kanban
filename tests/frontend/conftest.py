@@ -5,6 +5,7 @@ This module provides fixtures and configuration for frontend testing.
 """
 
 import os
+import time
 import pytest
 from playwright.sync_api import Page, Browser, BrowserContext
 from typing import Generator
@@ -17,16 +18,80 @@ def base_url() -> str:
 
 
 @pytest.fixture(scope="session")
-def test_username() -> str:
-    """Test user email (used as username for login)."""
-    # Note: The login form uses email, not username
-    return os.getenv("TEST_USERNAME", "michael@stormpath.dev")
+def test_credentials(base_url: str):
+    """
+    Get or create test user credentials.
+    
+    If TEST_USERNAME and TEST_PASSWORD are set, use those.
+    Otherwise, create a temporary test user automatically.
+    """
+    username = os.getenv("TEST_USERNAME")
+    password = os.getenv("TEST_PASSWORD")
+    
+    if username and password:
+        # Use provided credentials
+        return {"email": username, "password": password, "created": False}
+    
+    # Create temporary user
+    from playwright.sync_api import sync_playwright
+    
+    timestamp = int(time.time())
+    temp_user = {
+        "username": f"testuser_{timestamp}",
+        "email": f"testuser_{timestamp}@example.com",
+        "password": "TestPassword123!",
+        "full_name": f"Test User {timestamp}",
+        "created": True
+    }
+    
+    print(f"\n=== Creating Temporary Test User ===")
+    print(f"Email: {temp_user['email']}")
+    print(f"Password: {temp_user['password']}")
+    
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        
+        try:
+            page.goto(base_url)
+            page.wait_for_selector("#auth-screen", timeout=10000)
+            page.click("#show-signup")
+            page.wait_for_selector("#signup-form", state="visible", timeout=5000)
+            
+            page.fill("#signup-username", temp_user["username"])
+            page.fill("#signup-email", temp_user["email"])
+            page.fill("#signup-fullname", temp_user["full_name"])
+            page.fill("#signup-password", temp_user["password"])
+            page.fill("#signup-confirm-password", temp_user["password"])
+            
+            page.click("#signup-email-form button[type='submit']")
+            page.wait_for_timeout(3000)
+            
+            print("✅ Temporary test user created successfully")
+        except Exception as e:
+            print(f"⚠️ Failed to create temporary user: {e}")
+            print("Falling back to environment credentials")
+            temp_user = {
+                "email": "michael@stormpath.dev",
+                "password": "TestPassword123!",
+                "created": False
+            }
+        finally:
+            browser.close()
+    
+    return temp_user
 
 
 @pytest.fixture(scope="session")
-def test_password() -> str:
+def test_username(test_credentials) -> str:
+    """Test user email (used as username for login)."""
+    return test_credentials["email"]
+
+
+@pytest.fixture(scope="session")
+def test_password(test_credentials) -> str:
     """Test user password."""
-    return os.getenv("TEST_PASSWORD", "TestPassword123!")
+    return test_credentials["password"]
 
 
 @pytest.fixture(scope="session")
