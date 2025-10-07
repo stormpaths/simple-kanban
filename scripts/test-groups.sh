@@ -1,13 +1,13 @@
 #!/bin/bash
-"""
-Comprehensive Group Management Testing Script for Simple Kanban Board
-
-This script tests the complete group management functionality including:
-- Group creation, listing, and details
-- Group-based board creation and access
-- Board access control validation
-- Integration with API key authentication
-"""
+#
+# Comprehensive Group Management Testing Script for Simple Kanban Board
+#
+# This script tests the complete group management functionality including:
+# - Group creation, listing, and details
+# - Group-based board creation and access
+# - Board access control validation
+# - Integration with API key authentication
+#
 
 set -e
 
