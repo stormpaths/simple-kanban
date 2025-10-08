@@ -87,25 +87,56 @@ def test_username() -> str:
     """
     Test user email (used as username for login).
     
-    NOTE: After deploying the auth.js fix, automatic user creation will work.
-    For now, set TEST_USERNAME environment variable.
+    Tries to load credentials from:
+    1. TEST_USERNAME environment variable
+    2. test_credentials.py file (if exists)
+    3. Raises error if neither found
     """
     username = os.getenv("TEST_USERNAME")
+    
+    # If not in env, try to load from credentials file
     if not username:
-        print("\n⚠️  TEST_USERNAME not set. Please set credentials:")
+        try:
+            from test_credentials import TEST_USERNAME
+            username = TEST_USERNAME
+            print(f"\n✅ Loaded credentials from test_credentials.py")
+        except ImportError:
+            pass
+    
+    if not username:
+        print("\n⚠️  TEST_USERNAME not set. Please run setup:")
+        print("   ./scripts/setup-frontend-tests.sh")
+        print("\n   Or set manually:")
         print("   export TEST_USERNAME='your-email@example.com'")
-        print("   export TEST_PASSWORD='your-password'")
-        print("\n   Or deploy the auth.js fix to enable auto-registration\n")
-        raise ValueError("TEST_USERNAME environment variable required")
+        print("   export TEST_PASSWORD='your-password'\n")
+        raise ValueError("TEST_USERNAME not found. Run ./scripts/setup-frontend-tests.sh")
+    
     return username
 
 
 @pytest.fixture(scope="session")
 def test_password() -> str:
-    """Test user password."""
+    """
+    Test user password.
+    
+    Tries to load credentials from:
+    1. TEST_PASSWORD environment variable
+    2. test_credentials.py file (if exists)
+    3. Raises error if neither found
+    """
     password = os.getenv("TEST_PASSWORD")
+    
+    # If not in env, try to load from credentials file
     if not password:
-        raise ValueError("TEST_PASSWORD environment variable required")
+        try:
+            from test_credentials import TEST_PASSWORD
+            password = TEST_PASSWORD
+        except ImportError:
+            pass
+    
+    if not password:
+        raise ValueError("TEST_PASSWORD not found. Run ./scripts/setup-frontend-tests.sh")
+    
     return password
 
 
