@@ -83,15 +83,30 @@ def test_credentials(base_url: str):
 
 
 @pytest.fixture(scope="session")
-def test_username(test_credentials) -> str:
-    """Test user email (used as username for login)."""
-    return test_credentials["email"]
+def test_username() -> str:
+    """
+    Test user email (used as username for login).
+    
+    NOTE: After deploying the auth.js fix, automatic user creation will work.
+    For now, set TEST_USERNAME environment variable.
+    """
+    username = os.getenv("TEST_USERNAME")
+    if not username:
+        print("\n⚠️  TEST_USERNAME not set. Please set credentials:")
+        print("   export TEST_USERNAME='your-email@example.com'")
+        print("   export TEST_PASSWORD='your-password'")
+        print("\n   Or deploy the auth.js fix to enable auto-registration\n")
+        raise ValueError("TEST_USERNAME environment variable required")
+    return username
 
 
 @pytest.fixture(scope="session")
-def test_password(test_credentials) -> str:
+def test_password() -> str:
     """Test user password."""
-    return test_credentials["password"]
+    password = os.getenv("TEST_PASSWORD")
+    if not password:
+        raise ValueError("TEST_PASSWORD environment variable required")
+    return password
 
 
 @pytest.fixture(scope="session")
