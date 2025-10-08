@@ -51,24 +51,29 @@ if [ -f "$FRONTEND_TEST_DIR/test-results/pytest-report.json" ]; then
     SKIPPED=$(jq -r '.summary.skipped // 0' "$FRONTEND_TEST_DIR/test-results/pytest-report.json")
     ERROR=$(jq -r '.summary.error // 0' "$FRONTEND_TEST_DIR/test-results/pytest-report.json")
     
-    # Extract test details
+    # Extract test details - simplified to avoid jq issues
     RESULTS=$(jq -r '.tests[] | 
         if .outcome == "passed" then
-            "✅ \(.nodeid | split("::")[1:] | join(" - ")) - Passed (\(.duration | tonumber | round)s)"
+            "✅ \(.nodeid) - Passed"
         elif .outcome == "failed" then
-            "❌ \(.nodeid | split("::")[1:] | join(" - ")) - Failed: \(.call.longrepr.reprcrash.message // "Unknown error")"
+            "❌ \(.nodeid) - Failed"
         elif .outcome == "skipped" then
-            "⏭️  \(.nodeid | split("::")[1:] | join(" - ")) - Skipped"
+            "⏭️  \(.nodeid) - Skipped"
         else
-            "⚠️  \(.nodeid | split("::")[1:] | join(" - ")) - \(.outcome)"
-        end' "$FRONTEND_TEST_DIR/test-results/pytest-report.json" | jq -R -s 'split("\n") | map(select(length > 0))')
+            "⚠️  \(.nodeid) - \(.outcome)"
+        end' "$FRONTEND_TEST_DIR/test-results/pytest-report.json" 2>/dev/null | jq -R -s 'split("\n") | map(select(length > 0))' 2>/dev/null || echo '["Error extracting test details"]')
 else
     # Fallback: parse from output
-    TOTAL=$(grep -oP '\d+(?= passed)' /tmp/frontend-test-output.txt | tail -1 || echo "0")
-    PASSED=$TOTAL
-    FAILED=$(grep -oP '\d+(?= failed)' /tmp/frontend-test-output.txt | tail -1 || echo "0")
-    SKIPPED=$(grep -oP '\d+(?= skipped)' /tmp/frontend-test-output.txt | tail -1 || echo "0")
-    ERROR=$(grep -oP '\d+(?= error)' /tmp/frontend-test-output.txt | tail -1 || echo "0")
+    PASSED=$(grep -oP '\d+(?= passed)' /tmp/frontend-test-output.txt | tail -1)
+    FAILED=$(grep -oP '\d+(?= failed)' /tmp/frontend-test-output.txt | tail -1)
+    SKIPPED=$(grep -oP '\d+(?= skipped)' /tmp/frontend-test-output.txt | tail -1)
+    ERROR=$(grep -oP '\d+(?= error)' /tmp/frontend-test-output.txt | tail -1)
+    
+    # Set defaults if empty
+    PASSED=${PASSED:-0}
+    FAILED=${FAILED:-0}
+    SKIPPED=${SKIPPED:-0}
+    ERROR=${ERROR:-0}
     
     # Simple results array
     RESULTS='["Frontend tests completed - see detailed output above"]'
