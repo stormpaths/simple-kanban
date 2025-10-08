@@ -70,6 +70,12 @@ def test_user_registration_flow(page: Page, base_url: str):
         # Wait for page to settle
         page.wait_for_timeout(2000)
         
+        # If still on signup form, click to show login
+        if page.locator("#signup-form").is_visible():
+            print("Still on signup form, switching to login...")
+            page.click("#show-login")
+            page.wait_for_selector("#login-form", state="visible", timeout=5000)
+        
         # Check if we're on login form
         if page.locator("#login-form").is_visible():
             print("On login form, filling credentials...")
@@ -88,6 +94,24 @@ def test_user_registration_flow(page: Page, base_url: str):
                 print(f"❌ Login failed after registration")
                 print(f"Current URL: {page.url}")
                 print(f"Login form visible: {page.locator('#login-form').is_visible()}")
+                
+                # Check for error messages
+                notification = page.locator("#notification")
+                if notification.is_visible():
+                    error_msg = page.locator("#notification-message").text_content()
+                    print(f"Error notification: {error_msg}")
+                
+                # Check page content for errors
+                page_content = page.content()
+                if "error" in page_content.lower():
+                    print("Page contains 'error' text")
+                
+                # Try to find any visible error elements
+                error_elements = page.locator(".error, .alert-danger, .text-danger").all()
+                for elem in error_elements:
+                    if elem.is_visible():
+                        print(f"Error element found: {elem.text_content()}")
+                
                 raise
         else:
             # Not on login form, check where we are
