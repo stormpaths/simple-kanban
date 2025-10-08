@@ -308,7 +308,49 @@ generate_report() {
     
     # Generate machine-readable report
     local report_file="$PROJECT_ROOT/test-results.json"
-    cat > "$report_file" << EOF
+    
+    # Check if frontend results exist
+    local frontend_section=""
+    if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+        frontend_section=$(cat "$PROJECT_ROOT/frontend-test-results.json" | jq '{
+            frontend: {
+                timestamp: .timestamp,
+                duration: .duration,
+                summary: .summary,
+                success: .success,
+                results: .results
+            }
+        }' | jq -r '.frontend')
+    fi
+    
+    # Generate report with optional frontend section
+    if [ -n "$frontend_section" ]; then
+        cat > "$report_file" << EOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "duration": $total_duration,
+  "mode": "$([ "$QUICK_MODE" = true ] && echo "quick" || echo "full")",
+  "backend": {
+    "summary": {
+      "total": $TOTAL_TESTS,
+      "passed": $PASSED_TESTS,
+      "failed": $FAILED_TESTS,
+      "skipped": $SKIPPED_TESTS
+    },
+    "success": $([ $FAILED_TESTS -eq 0 ] && echo "true" || echo "false"),
+    "results": [
+$(printf '      "%s"' "${TEST_RESULTS[0]}")
+$(printf ',\n      "%s"' "${TEST_RESULTS[@]:1}")
+    ]
+  },
+  "frontend": $frontend_section,
+  "overall": {
+    "success": $([ $FAILED_TESTS -eq 0 ] && echo "true" || echo "false")
+  }
+}
+EOF
+    else
+        cat > "$report_file" << EOF
 {
   "timestamp": "$(date -Iseconds)",
   "duration": $total_duration,
@@ -326,6 +368,7 @@ $(printf ',\n    "%s"' "${TEST_RESULTS[@]:1}")
   ]
 }
 EOF
+    fi
     
     log_info "Machine-readable report saved to: $report_file"
     
@@ -435,6 +478,51 @@ else
     log_failure "OpenAPI schema failed (HTTP $openapi_response)"
     FAILED_TESTS=$((FAILED_TESTS + 1))
     TEST_RESULTS+=("❌ OpenAPI Schema - HTTP $openapi_response")
+fi
+
+# Frontend tests (if not in quick mode)
+if [ "$QUICK_MODE" = false ]; then
+    log_header "FRONTEND TESTS"
+    
+    log_test "Running Frontend Test Suite"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    
+    # Check if frontend tests are available
+    if [ -f "$SCRIPT_DIR/test-frontend-json.sh" ]; then
+        if "$SCRIPT_DIR/test-frontend-json.sh" > /tmp/frontend-test-output.log 2>&1; then
+            log_success "Frontend tests passed"
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+            TEST_RESULTS+=("✅ Frontend Test Suite - All tests passed")
+            
+            # Merge frontend results if JSON exists
+            if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+                FRONTEND_PASSED=$(jq -r '.summary.passed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_FAILED=$(jq -r '.summary.failed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_TOTAL=$(jq -r '.summary.total // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                TEST_RESULTS+=("  📊 Frontend: $FRONTEND_PASSED/$FRONTEND_TOTAL passed")
+            fi
+        else
+            log_failure "Frontend tests failed"
+            FAILED_TESTS=$((FAILED_TESTS + 1))
+            TEST_RESULTS+=("❌ Frontend Test Suite - Tests failed")
+            
+            # Still try to get details
+            if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+                FRONTEND_PASSED=$(jq -r '.summary.passed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_FAILED=$(jq -r '.summary.failed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_TOTAL=$(jq -r '.summary.total // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                TEST_RESULTS+=("  📊 Frontend: $FRONTEND_PASSED passed, $FRONTEND_FAILED failed")
+            fi
+        fi
+    else
+        log_warning "Frontend test script not found"
+        SKIPPED_TESTS=$((SKIPPED_TESTS + 1))
+        TEST_RESULTS+=("⏭️  Frontend Test Suite - Script not found")
+    fi
+else
+    log_skip "Frontend tests (quick mode)"
+    SKIPPED_TESTS=$((SKIPPED_TESTS + 1))
+    TEST_RESULTS+=("⏭️  Frontend Test Suite - Skipped (quick mode)")
 fi
 
 log_header "TEST EXECUTION COMPLETE"
