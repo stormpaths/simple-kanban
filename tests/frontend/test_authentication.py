@@ -25,9 +25,15 @@ class TestAuthentication:
         # Submit login
         page.click("#login-email-form button[type='submit']")
         
-        # Verify successful login
+        # Verify successful login - board selector should be visible
         page.wait_for_selector("#board-select", timeout=10000)
-        expect(page.locator("#user-logout")).to_be_visible()
+        expect(page.locator("#board-select")).to_be_visible()
+        
+        # Verify user menu button is visible (logout is in dropdown)
+        expect(page.locator("#user-menu-btn")).to_be_visible()
+        
+        # Verify logout link exists (even if hidden in dropdown)
+        expect(page.locator("#user-logout")).to_be_attached()
     
     def test_login_with_invalid_credentials(self, page: Page, base_url: str):
         """Test login failure with invalid credentials."""
@@ -54,6 +60,13 @@ class TestAuthentication:
         page = authenticated_page
         
         # Verify logged in
+        expect(page.locator("#board-select")).to_be_visible()
+        
+        # Open user menu dropdown
+        page.click("#user-menu-btn")
+        page.wait_for_timeout(500)
+        
+        # Verify logout is now visible
         expect(page.locator("#user-logout")).to_be_visible()
         
         # Click logout
@@ -73,9 +86,12 @@ class TestAuthentication:
         # Reload page
         page.reload()
         
-        # Should still be logged in
+        # Should still be logged in - board selector should reappear
         page.wait_for_selector("#board-select", timeout=10000)
-        expect(page.locator("#user-logout")).to_be_visible()
+        expect(page.locator("#board-select")).to_be_visible()
+        
+        # Verify user menu is still visible
+        expect(page.locator("#user-menu-btn")).to_be_visible()
     
     def test_protected_page_redirect(self, page: Page, base_url: str):
         """Test that accessing protected pages redirects to login."""
