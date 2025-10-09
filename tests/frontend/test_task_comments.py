@@ -23,14 +23,14 @@ class TestTaskComments:
         # Wait for board to load
         page.wait_for_selector(".column", timeout=10000)
         
-        # Create a new task
-        page.click("#new-task-btn")
+        # Create a new task (click add button in first column)
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         task_title = "Task with Multiple Comments"
         page.fill("#task-title", task_title)
         page.fill("#task-desc", "Testing comment functionality")
-        page.select_option("#task-column-id", index=0)
+        # Column is already set when clicking add button
         page.click("#task-submit")
         
         # Wait for task to be created
@@ -91,13 +91,13 @@ class TestTaskComments:
         page.wait_for_selector(".column", timeout=10000)
         
         # Create a task
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         task_title = "Complete Field Test Task"
         page.fill("#task-title", task_title)
         page.fill("#task-desc", "Initial description")
-        page.select_option("#task-column-id", index=0)
+        # Column already set by clicking add button
         page.click("#task-submit")
         page.wait_for_selector("#task-modal", state="hidden")
         page.wait_for_timeout(1000)
@@ -176,11 +176,11 @@ class TestTaskComments:
         
         # Create and open a task
         page.wait_for_selector(".column", timeout=10000)
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "Keyboard Shortcut Test")
-        page.select_option("#task-column-id", index=0)
+        # Column already set by clicking add button
         page.click("#task-submit")
         page.wait_for_selector("#task-modal", state="hidden")
         page.wait_for_timeout(1000)
@@ -208,11 +208,11 @@ class TestTaskComments:
         
         # Create and open a task
         page.wait_for_selector(".column", timeout=10000)
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "Comment Validation Test")
-        page.select_option("#task-column-id", index=0)
+        # Column already set by clicking add button
         page.click("#task-submit")
         page.wait_for_selector("#task-modal", state="hidden")
         page.wait_for_timeout(1000)
@@ -255,11 +255,11 @@ class TestTaskCommentsEdgeCases:
         
         # Create and open a task
         page.wait_for_selector(".column", timeout=10000)
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "Long Comment Test")
-        page.select_option("#task-column-id", index=0)
+        # Column already set by clicking add button
         page.click("#task-submit")
         page.wait_for_selector("#task-modal", state="hidden")
         page.wait_for_timeout(1000)
@@ -291,11 +291,11 @@ class TestTaskCommentsEdgeCases:
         
         # Create task with comment
         page.wait_for_selector(".column", timeout=10000)
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "Comment Persistence Test")
-        page.select_option("#task-column-id", index=0)
+        # Column already set by clicking add button
         page.click("#task-submit")
         page.wait_for_selector("#task-modal", state="hidden")
         page.wait_for_timeout(1000)

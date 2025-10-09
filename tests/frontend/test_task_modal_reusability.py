@@ -30,7 +30,7 @@ class TestTaskModalReusability:
         # Open and close modal 5 times
         for i in range(5):
             # Open modal
-            page.click("#new-task-btn")
+            page.click(".add-task-btn")
             
             # Verify modal is visible
             modal = page.locator("#task-modal")
@@ -60,7 +60,7 @@ class TestTaskModalReusability:
         page.wait_for_selector(".column", timeout=10000)
         
         # Create a new task
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         task_title = "Test Task for Multiple Edits"
@@ -68,7 +68,7 @@ class TestTaskModalReusability:
         page.fill("#task-description", "Initial description")
         
         # Select first column
-        page.select_option("#task-column", index=0)
+        # Column already set by clicking add button
         
         # Save task
         page.click("#save-task-btn")
@@ -125,7 +125,7 @@ class TestTaskModalReusability:
         page = board_with_columns
         
         # Open modal and fill with data
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "First Task")
@@ -136,7 +136,7 @@ class TestTaskModalReusability:
         page.wait_for_selector("#task-modal", state="hidden")
         
         # Open modal again
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         # Verify fields are empty
@@ -155,11 +155,11 @@ class TestTaskModalReusability:
         task_titles = ["Task A", "Task B"]
         
         for title in task_titles:
-            page.click("#new-task-btn")
+            page.click(".add-task-btn")
             page.wait_for_selector("#task-modal", state="visible")
             page.fill("#task-title", title)
             page.fill("#task-description", f"Description for {title}")
-            page.select_option("#task-column", index=0)
+            # Column already set by clicking add button
             page.click("#save-task-btn")
             page.wait_for_selector("#task-modal", state="hidden")
             page.wait_for_timeout(500)
@@ -191,11 +191,11 @@ class TestTaskModalReusability:
         page = board_with_columns
         
         # Create a task
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         page.fill("#task-title", "Button Test Task")
         page.fill("#task-description", "Testing button functionality")
-        page.select_option("#task-column", index=0)
+        # Column already set by clicking add button
         page.click("#save-task-btn")
         page.wait_for_selector("#task-modal", state="hidden")
         
@@ -252,7 +252,7 @@ class TestTaskModalReusability:
         
         # Rapidly open and close modal 10 times
         for i in range(10):
-            page.click("#new-task-btn")
+            page.click(".add-task-btn")
             page.wait_for_selector("#task-modal", state="visible", timeout=2000)
             
             # Immediately close
@@ -260,12 +260,12 @@ class TestTaskModalReusability:
             page.wait_for_selector("#task-modal", state="hidden", timeout=2000)
         
         # Verify modal still works normally after rapid interactions
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "After Rapid Test")
         page.fill("#task-description", "Modal still functional")
-        page.select_option("#task-column", index=0)
+        # Column already set by clicking add button
         
         save_button = page.locator("#save-task-btn")
         expect(save_button).to_be_enabled()
@@ -284,10 +284,10 @@ class TestTaskModalEdgeCases:
         page = board_with_columns
         
         # Create a task first
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         page.fill("#task-title", "Task to Clear")
-        page.select_option("#task-column", index=0)
+        # Column already set by clicking add button
         page.click("#save-task-btn")
         page.wait_for_selector("#task-modal", state="hidden")
         
@@ -320,12 +320,12 @@ class TestTaskModalEdgeCases:
         # This test would require mocking network failures
         # For now, we'll test that modal can be reopened after any error
         
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         
         # Fill form
         page.fill("#task-title", "Network Test Task")
-        page.select_option("#task-column", index=0)
+        # Column already set by clicking add button
         
         # Save (might succeed or fail depending on network)
         page.click("#save-task-btn")
@@ -336,5 +336,5 @@ class TestTaskModalEdgeCases:
             page.keyboard.press("Escape")
         
         # Verify we can still open modal
-        page.click("#new-task-btn")
+        page.click(".add-task-btn")
         expect(page.locator("#task-modal")).to_be_visible()
