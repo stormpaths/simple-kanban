@@ -116,14 +116,13 @@ class TestBoardManagement:
         if not delete_button.is_visible():
             pytest.skip("Delete board button not visible")
         
+        # Handle browser confirmation dialog
+        page.on("dialog", lambda dialog: dialog.accept())
+        
         delete_button.click()
         
-        # Handle confirmation dialog
-        confirm_button = page.locator("button:has-text('Delete'), button:has-text('Confirm')")
-        if confirm_button.count() > 0:
-            confirm_button.click()
-        
-        page.wait_for_timeout(1000)
+        # Wait for deletion to complete
+        page.wait_for_timeout(2000)
         
         # Verify board removed from selector
         board_select = page.locator("#board-select")

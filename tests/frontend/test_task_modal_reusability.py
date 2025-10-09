@@ -127,8 +127,8 @@ class TestTaskModalReusability:
         page.fill("#task-title", "First Task")
         page.fill("#task-desc", "First Description")
         
-        # Close without saving
-        page.click("#task-modal")  # Click backdrop
+        # Close without saving (use close button, not backdrop)
+        page.click("#task-modal-close")
         page.wait_for_selector("#task-modal", state="hidden")
         
         # Open modal again

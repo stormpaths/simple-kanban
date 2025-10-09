@@ -159,14 +159,14 @@ class TestTaskComments:
         # Verify title
         expect(page.locator("#task-title")).to_have_value(task_title)
         
-        # Verify description
-        expect(page.locator("#task-desc")).to_have_value("Updated description - iteration 2")
+        # Verify description (should be iteration 3 - the last edit)
+        expect(page.locator("#task-desc")).to_have_value("Updated description - iteration 3")
         
-        # Verify all comments are present
+        # Verify all comments are present (iterations 1, 2, 3)
         comments_list = page.locator("#comments-list")
-        expect(comments_list).to_contain_text("Comment added in iteration 0")
         expect(comments_list).to_contain_text("Comment added in iteration 1")
         expect(comments_list).to_contain_text("Comment added in iteration 2")
+        expect(comments_list).to_contain_text("Comment added in iteration 3")
         
         print("✅ All data persisted correctly!")
     
