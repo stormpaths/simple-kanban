@@ -1,0 +1,15 @@
+# Test credentials - DO NOT COMMIT
+test-credentials.env
+.env.test
+test_credentials.py
+test-credentials.json
+
+# Test results
+test-results/
+playwright-report/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Backups
+*.bak

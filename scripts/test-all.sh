@@ -1,16 +1,16 @@
 #!/bin/bash
-"""
-Comprehensive Test Battery for Simple Kanban Board
-
-This script runs all functional and smoke tests to validate the entire application
-after deployment. It provides a unified report of all test results.
-
-Usage:
-  ./scripts/test-all.sh                    # Run all tests
-  ./scripts/test-all.sh --quick            # Skip slow tests
-  ./scripts/test-all.sh --verbose          # Show detailed output
-  ./scripts/test-all.sh --stop-on-fail     # Stop on first failure
-"""
+#
+# Comprehensive Test Battery for Simple Kanban Board
+#
+# This script runs all functional and smoke tests to validate the entire application
+# after deployment. It provides a unified report of all test results.
+#
+# Usage:
+#   ./scripts/test-all.sh                    # Run all tests
+#   ./scripts/test-all.sh --quick            # Skip slow tests
+#   ./scripts/test-all.sh --verbose          # Show detailed output
+#   ./scripts/test-all.sh --stop-on-fail     # Stop on first failure
+#
 
 set -e
 
@@ -19,7 +19,27 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 NAMESPACE="apps-dev"
 SECRET_NAME="simple-kanban-test-api-key"
-BASE_URL="https://kanban.stormpath.dev"
+
+# Function to get the service URL dynamically
+get_service_url() {
+    # Try to get URL from environment variable first
+    if [ -n "$BASE_URL" ]; then
+        echo "$BASE_URL"
+        return
+    fi
+    
+    # Try to get from Kubernetes ingress
+    local ingress_host=$(kubectl get ingress simple-kanban-dev -n "$NAMESPACE" -o jsonpath='{.spec.rules[0].host}' 2>/dev/null)
+    if [ -n "$ingress_host" ]; then
+        echo "https://$ingress_host"
+        return
+    fi
+    
+    # Fallback to production URL
+    echo "https://kanban.stormpath.dev"
+}
+
+BASE_URL=$(get_service_url)
 
 # Parse command line arguments
 QUICK_MODE=false
@@ -198,7 +218,7 @@ run_health_check() {
     fi
 }
 
-# Function to verify API key exists
+# Function to verify API key exists (with auto-bootstrap)
 verify_api_key() {
     log_test "API Key Verification"
     
@@ -216,11 +236,39 @@ verify_api_key() {
             TEST_RESULTS+=("❌ API Key Verification - Empty key")
         fi
     else
-        log_failure "API key secret not found: $SECRET_NAME"
-        FAILED_TESTS=$((FAILED_TESTS + 1))
-        TEST_RESULTS+=("❌ API Key Verification - Secret not found")
-        if [ "$STOP_ON_FAIL" = true ]; then
-            exit 1
+        log_info "API key secret not found - attempting to bootstrap test environment..."
+        
+        # Try to run bootstrap script
+        if [ -f "$SCRIPT_DIR/test-bootstrap.sh" ]; then
+            log_info "Running bootstrap script to create test environment..."
+            if "$SCRIPT_DIR/test-bootstrap.sh" > /dev/null 2>&1; then
+                log_success "Bootstrap completed - test environment created"
+                # Verify the key was created
+                local api_key=$(kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.api-key}' | base64 -d 2>/dev/null)
+                if [ -n "$api_key" ]; then
+                    log_success "API key now available after bootstrap"
+                    PASSED_TESTS=$((PASSED_TESTS + 1))
+                    TEST_RESULTS+=("✅ API Key Verification - Key accessible")
+                else
+                    log_failure "Bootstrap completed but API key still not accessible"
+                    FAILED_TESTS=$((FAILED_TESTS + 1))
+                    TEST_RESULTS+=("❌ API Key Verification - Bootstrap failed")
+                fi
+            else
+                log_failure "Bootstrap script failed"
+                FAILED_TESTS=$((FAILED_TESTS + 1))
+                TEST_RESULTS+=("❌ API Key Verification - Bootstrap failed")
+                if [ "$STOP_ON_FAIL" = true ]; then
+                    exit 1
+                fi
+            fi
+        else
+            log_failure "API key secret not found and no bootstrap script available"
+            FAILED_TESTS=$((FAILED_TESTS + 1))
+            TEST_RESULTS+=("❌ API Key Verification - Secret not found, no bootstrap")
+            if [ "$STOP_ON_FAIL" = true ]; then
+                exit 1
+            fi
         fi
     fi
 }
@@ -260,7 +308,49 @@ generate_report() {
     
     # Generate machine-readable report
     local report_file="$PROJECT_ROOT/test-results.json"
-    cat > "$report_file" << EOF
+    
+    # Check if frontend results exist
+    local frontend_section=""
+    if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+        frontend_section=$(cat "$PROJECT_ROOT/frontend-test-results.json" | jq '{
+            frontend: {
+                timestamp: .timestamp,
+                duration: .duration,
+                summary: .summary,
+                success: .success,
+                results: .results
+            }
+        }' | jq -r '.frontend')
+    fi
+    
+    # Generate report with optional frontend section
+    if [ -n "$frontend_section" ]; then
+        cat > "$report_file" << EOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "duration": $total_duration,
+  "mode": "$([ "$QUICK_MODE" = true ] && echo "quick" || echo "full")",
+  "backend": {
+    "summary": {
+      "total": $TOTAL_TESTS,
+      "passed": $PASSED_TESTS,
+      "failed": $FAILED_TESTS,
+      "skipped": $SKIPPED_TESTS
+    },
+    "success": $([ $FAILED_TESTS -eq 0 ] && echo "true" || echo "false"),
+    "results": [
+$(printf '      "%s"' "${TEST_RESULTS[0]}")
+$(printf ',\n      "%s"' "${TEST_RESULTS[@]:1}")
+    ]
+  },
+  "frontend": $frontend_section,
+  "overall": {
+    "success": $([ $FAILED_TESTS -eq 0 ] && echo "true" || echo "false")
+  }
+}
+EOF
+    else
+        cat > "$report_file" << EOF
 {
   "timestamp": "$(date -Iseconds)",
   "duration": $total_duration,
@@ -278,6 +368,7 @@ $(printf ',\n    "%s"' "${TEST_RESULTS[@]:1}")
   ]
 }
 EOF
+    fi
     
     log_info "Machine-readable report saved to: $report_file"
     
@@ -387,6 +478,51 @@ else
     log_failure "OpenAPI schema failed (HTTP $openapi_response)"
     FAILED_TESTS=$((FAILED_TESTS + 1))
     TEST_RESULTS+=("❌ OpenAPI Schema - HTTP $openapi_response")
+fi
+
+# Frontend tests (if not in quick mode)
+if [ "$QUICK_MODE" = false ]; then
+    log_header "FRONTEND TESTS"
+    
+    log_test "Running Frontend Test Suite"
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    
+    # Check if frontend tests are available
+    if [ -f "$SCRIPT_DIR/test-frontend-json.sh" ]; then
+        if "$SCRIPT_DIR/test-frontend-json.sh" > /tmp/frontend-test-output.log 2>&1; then
+            log_success "Frontend tests passed"
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+            TEST_RESULTS+=("✅ Frontend Test Suite - All tests passed")
+            
+            # Merge frontend results if JSON exists
+            if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+                FRONTEND_PASSED=$(jq -r '.summary.passed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_FAILED=$(jq -r '.summary.failed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_TOTAL=$(jq -r '.summary.total // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                TEST_RESULTS+=("  📊 Frontend: $FRONTEND_PASSED/$FRONTEND_TOTAL passed")
+            fi
+        else
+            log_failure "Frontend tests failed"
+            FAILED_TESTS=$((FAILED_TESTS + 1))
+            TEST_RESULTS+=("❌ Frontend Test Suite - Tests failed")
+            
+            # Still try to get details
+            if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+                FRONTEND_PASSED=$(jq -r '.summary.passed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_FAILED=$(jq -r '.summary.failed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                FRONTEND_TOTAL=$(jq -r '.summary.total // 0' "$PROJECT_ROOT/frontend-test-results.json")
+                TEST_RESULTS+=("  📊 Frontend: $FRONTEND_PASSED passed, $FRONTEND_FAILED failed")
+            fi
+        fi
+    else
+        log_warning "Frontend test script not found"
+        SKIPPED_TESTS=$((SKIPPED_TESTS + 1))
+        TEST_RESULTS+=("⏭️  Frontend Test Suite - Script not found")
+    fi
+else
+    log_skip "Frontend tests (quick mode)"
+    SKIPPED_TESTS=$((SKIPPED_TESTS + 1))
+    TEST_RESULTS+=("⏭️  Frontend Test Suite - Skipped (quick mode)")
 fi
 
 log_header "TEST EXECUTION COMPLETE"

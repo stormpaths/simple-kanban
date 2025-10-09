@@ -164,9 +164,9 @@ class AuthManager {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/json',
                 },
-                body: new URLSearchParams(loginData)
+                body: JSON.stringify(loginData)
             });
 
             const data = await response.json();
