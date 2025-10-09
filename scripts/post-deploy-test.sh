@@ -24,8 +24,17 @@ set -e
 ENVIRONMENT=${1:-dev}
 TEST_MODE=${2:-full}
 FAIL_MODE=${3:-""}
-NAMESPACE="apps-${ENVIRONMENT}"
-DEPLOYMENT_NAME="simple-kanban-${ENVIRONMENT}"
+
+# Set namespace and deployment name based on environment
+if [ "$ENVIRONMENT" = "prod" ]; then
+    NAMESPACE="apps"
+    DEPLOYMENT_NAME="simple-kanban"
+    BASE_URL="https://kanban.stormpath.net"
+else
+    NAMESPACE="apps-dev"
+    DEPLOYMENT_NAME="simple-kanban-dev"
+    BASE_URL="http://simple-kanban-dev.apps-dev.svc.cluster.local:8000"
+fi
 
 # Set default fail mode based on environment
 if [ -z "$FAIL_MODE" ]; then
@@ -61,6 +70,9 @@ log_error() {
 }
 
 log_info "Starting post-deploy validation for environment: $ENVIRONMENT"
+log_info "Namespace: $NAMESPACE"
+log_info "Deployment: $DEPLOYMENT_NAME"
+log_info "Base URL: $BASE_URL"
 log_info "Test mode: $TEST_MODE"
 log_info "Fail mode: $FAIL_MODE"
 
@@ -98,10 +110,17 @@ else
     TEST_ARGS="--quick"
 fi
 
-# Execute tests
+# Execute tests with BASE_URL
 TEST_EXIT_CODE=0
-if "$TEST_SCRIPT" $TEST_ARGS; then
+log_info "Running tests against: $BASE_URL"
+if BASE_URL="$BASE_URL" "$TEST_SCRIPT" $TEST_ARGS; then
     log_success "All tests passed! Deployment validation successful."
+    
+    # Show test summary
+    if [ -f "test-results.json" ]; then
+        log_info "Test Summary:"
+        cat test-results.json | jq -r '.summary // empty' 2>/dev/null || true
+    fi
     
     # Optional: Send notification (uncomment if you have notification setup)
     # curl -X POST "https://hooks.slack.com/..." -d "{\"text\":\"✅ $DEPLOYMENT_NAME deployed and tested successfully\"}"
@@ -109,6 +128,12 @@ if "$TEST_SCRIPT" $TEST_ARGS; then
 else
     TEST_EXIT_CODE=$?
     log_error "Tests failed! Some functionality may be broken."
+    
+    # Show test summary
+    if [ -f "test-results.json" ]; then
+        log_error "Test Summary:"
+        cat test-results.json | jq -r '.summary // empty' 2>/dev/null || true
+    fi
     
     # Show recent logs for debugging
     log_info "Recent application logs:"

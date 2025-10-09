@@ -203,15 +203,37 @@ simple-kanban/
 
 ## Testing
 
+### 🎯 **Test Coverage: 93%** (57/61 tests passing)
+- ✅ **Backend**: 100% (10/10 tests)
+- ✅ **Frontend**: 92% (47/51 tests)
+- ⏭️ **Skipped**: 4 tests (incomplete UI features documented in TODO_FRONTEND_FEATURES.md)
+
 ### Automated Testing (Integrated with Skaffold)
 ```bash
 # Deploy with automatic testing
-skaffold run -p dev  # Runs comprehensive test battery automatically
+skaffold run -p dev   # Runs full test battery automatically (soft-fail)
+skaffold run -p prod  # Runs full test battery automatically (hard-fail)
 
 # Manual test execution
 ./scripts/test-all.sh --quick    # Quick smoke tests (~15s)
 ./scripts/test-all.sh --full     # Full test battery (~45s)
 ./scripts/test-all.sh --verbose  # Detailed output for debugging
+```
+
+### Production Testing
+```bash
+# Test against production deployment
+BASE_URL=https://kanban.stormpath.net ./scripts/test-all.sh
+
+# Backend/API tests only (works in production)
+BASE_URL=https://kanban.stormpath.net ./scripts/test-auth-comprehensive.sh
+
+# Frontend tests (requires local Docker)
+cd tests/frontend
+BASE_URL=https://kanban.stormpath.net docker-compose run --rm frontend-tests pytest -v
+
+# Generate JSON report
+./scripts/test-frontend-json.sh  # Creates frontend-test-results.json
 ```
 
 ### Test Categories
@@ -226,6 +248,12 @@ skaffold run -p dev  # Runs comprehensive test battery automatically
 - **Group Management**: Collaboration workflow validation
 - **Admin Functions**: Administrative interface testing with proper access control
 - **Security**: Rate limiting, CSRF protection, and comprehensive access control
+- **Frontend E2E**: Playwright-based browser automation tests (51 tests)
+  - Authentication flows and session management
+  - Board CRUD operations and persistence
+  - Task management and comments
+  - Group collaboration workflows
+  - Modal reusability and edge cases
 
 ### Unit Tests
 ```bash
