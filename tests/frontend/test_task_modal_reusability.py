@@ -14,13 +14,13 @@ from playwright.sync_api import Page, expect
 class TestTaskModalReusability:
     """Test suite for task modal interaction and reusability."""
     
-    def test_open_close_modal_multiple_times(self, authenticated_page: Page):
+    def test_open_close_modal_multiple_times(self, board_with_columns: Page):
         """
         Test that the task modal can be opened and closed multiple times.
         
         This validates that modal cleanup works correctly.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Ensure we have a board selected
         if page.locator("#board-select").count() > 0:
@@ -48,13 +48,13 @@ class TestTaskModalReusability:
             # Small delay between iterations
             page.wait_for_timeout(500)
     
-    def test_create_and_edit_task_multiple_times(self, authenticated_page: Page):
+    def test_create_and_edit_task_multiple_times(self, board_with_columns: Page):
         """
         Test creating a task and then editing it multiple times.
         
         This is the critical test for the bug where edit buttons stopped working.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Ensure we have a board with columns
         page.wait_for_selector(".column", timeout=10000)
@@ -116,13 +116,13 @@ class TestTaskModalReusability:
         
         print("\n✅ Successfully edited task 3 times - buttons working correctly!")
     
-    def test_modal_form_reset_between_opens(self, authenticated_page: Page):
+    def test_modal_form_reset_between_opens(self, board_with_columns: Page):
         """
         Test that modal form fields are properly reset between opens.
         
         This ensures no data leakage between modal uses.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Open modal and fill with data
         page.click("#new-task-btn")
@@ -143,13 +143,13 @@ class TestTaskModalReusability:
         expect(page.locator("#task-title")).to_have_value("")
         expect(page.locator("#task-description")).to_have_value("")
     
-    def test_edit_different_tasks_sequentially(self, authenticated_page: Page):
+    def test_edit_different_tasks_sequentially(self, board_with_columns: Page):
         """
         Test editing multiple different tasks in sequence.
         
         This validates that modal state is properly reset between different tasks.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Create two test tasks
         task_titles = ["Task A", "Task B"]
@@ -182,13 +182,13 @@ class TestTaskModalReusability:
             page.wait_for_selector("#task-modal", state="hidden")
             page.wait_for_timeout(500)
     
-    def test_modal_buttons_remain_functional(self, authenticated_page: Page):
+    def test_modal_buttons_remain_functional(self, board_with_columns: Page):
         """
         Test that all modal buttons remain functional after multiple uses.
         
         Specifically tests Save, Cancel, and Delete buttons.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Create a task
         page.click("#new-task-btn")
@@ -242,13 +242,13 @@ class TestTaskModalReusability:
             # Verify task is deleted
             expect(task_card).to_be_hidden()
     
-    def test_rapid_modal_interactions(self, authenticated_page: Page):
+    def test_rapid_modal_interactions(self, board_with_columns: Page):
         """
         Test rapid opening and closing of modals.
         
         This stress-tests the modal system to ensure no race conditions.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Rapidly open and close modal 10 times
         for i in range(10):
@@ -279,9 +279,9 @@ class TestTaskModalReusability:
 class TestTaskModalEdgeCases:
     """Test edge cases and error scenarios for task modals."""
     
-    def test_edit_task_with_empty_fields(self, authenticated_page: Page):
+    def test_edit_task_with_empty_fields(self, board_with_columns: Page):
         """Test that validation works when trying to save empty fields."""
-        page = authenticated_page
+        page = board_with_columns
         
         # Create a task first
         page.click("#new-task-btn")
@@ -309,13 +309,13 @@ class TestTaskModalEdgeCases:
         # Modal should still be visible or show error
         # (Exact behavior depends on your validation implementation)
     
-    def test_modal_state_after_network_error(self, authenticated_page: Page):
+    def test_modal_state_after_network_error(self, board_with_columns: Page):
         """
         Test modal behavior when save operation fails.
         
         This ensures the modal remains functional after errors.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # This test would require mocking network failures
         # For now, we'll test that modal can be reopened after any error

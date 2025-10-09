@@ -12,13 +12,13 @@ from playwright.sync_api import Page, expect
 class TestTaskComments:
     """Test suite for task comment functionality."""
     
-    def test_add_multiple_comments_to_task(self, authenticated_page: Page):
+    def test_add_multiple_comments_to_task(self, board_with_columns: Page):
         """
         Test adding multiple comments to a single task.
         
         This validates that the comment system works correctly with repeated use.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Wait for board to load
         page.wait_for_selector(".column", timeout=10000)
@@ -79,13 +79,13 @@ class TestTaskComments:
         page.keyboard.press("Escape")
         page.wait_for_selector("#task-modal", state="hidden")
     
-    def test_edit_task_with_all_fields_multiple_times(self, authenticated_page: Page):
+    def test_edit_task_with_all_fields_multiple_times(self, board_with_columns: Page):
         """
         Test editing ALL task fields (title, description, comments) multiple times.
         
         This is the comprehensive test for complete field coverage.
         """
-        page = authenticated_page
+        page = board_with_columns
         
         # Wait for board
         page.wait_for_selector(".column", timeout=10000)
@@ -170,9 +170,9 @@ class TestTaskComments:
         
         print("✅ All data persisted correctly!")
     
-    def test_comment_keyboard_shortcut(self, authenticated_page: Page):
+    def test_comment_keyboard_shortcut(self, board_with_columns: Page):
         """Test that Ctrl+Enter submits a comment."""
-        page = authenticated_page
+        page = board_with_columns
         
         # Create and open a task
         page.wait_for_selector(".column", timeout=10000)
@@ -202,9 +202,9 @@ class TestTaskComments:
         expect(page.locator("#comments-list")).to_contain_text("Comment via keyboard shortcut")
         expect(comment_input).to_have_value("")
     
-    def test_comment_validation(self, authenticated_page: Page):
+    def test_comment_validation(self, board_with_columns: Page):
         """Test that empty comments are not submitted."""
-        page = authenticated_page
+        page = board_with_columns
         
         # Create and open a task
         page.wait_for_selector(".column", timeout=10000)
@@ -249,9 +249,9 @@ class TestTaskComments:
 class TestTaskCommentsEdgeCases:
     """Test edge cases for task comments."""
     
-    def test_long_comment_validation(self, authenticated_page: Page):
+    def test_long_comment_validation(self, board_with_columns: Page):
         """Test that very long comments are handled properly."""
-        page = authenticated_page
+        page = board_with_columns
         
         # Create and open a task
         page.wait_for_selector(".column", timeout=10000)
@@ -285,9 +285,9 @@ class TestTaskCommentsEdgeCases:
         # (Exact behavior depends on implementation)
         print("✅ Long comment validation tested")
     
-    def test_comment_persistence_after_modal_reopen(self, authenticated_page: Page):
+    def test_comment_persistence_after_modal_reopen(self, board_with_columns: Page):
         """Test that comments persist when modal is closed and reopened."""
-        page = authenticated_page
+        page = board_with_columns
         
         # Create task with comment
         page.wait_for_selector(".column", timeout=10000)

@@ -190,6 +190,47 @@ def authenticated_page(page: Page, base_url: str, test_username: str, test_passw
 
 
 @pytest.fixture
+def board_with_columns(authenticated_page: Page) -> Generator[Page, None, None]:
+    """
+    Provide an authenticated page with a board and default columns.
+    
+    This fixture ensures tests have a working board with columns to interact with.
+    Creates a default board with "To Do", "In Progress", and "Done" columns.
+    """
+    page = authenticated_page
+    
+    # Check if board already has columns
+    if page.locator(".column").count() > 0:
+        print("✅ Board already has columns")
+        yield page
+        return
+    
+    print("🔧 Creating default board with columns...")
+    
+    # Create a new board
+    page.click("#new-board-btn")
+    page.wait_for_selector("#board-modal", state="visible", timeout=5000)
+    
+    board_name = f"Test Board {int(page.evaluate('Date.now()'))}"
+    page.fill("#board-name", board_name)
+    page.fill("#board-desc", "Automated test board with default columns")
+    
+    page.click("#board-submit")
+    page.wait_for_selector("#board-modal", state="hidden", timeout=5000)
+    
+    # Wait for board to be created and selected
+    page.wait_for_timeout(2000)
+    
+    # Verify board was created and has default columns
+    page.wait_for_selector(".column", timeout=10000)
+    
+    column_count = page.locator(".column").count()
+    print(f"✅ Board created with {column_count} columns")
+    
+    yield page
+
+
+@pytest.fixture
 def authenticated_context(context: BrowserContext, base_url: str, test_username: str, test_password: str) -> Generator[BrowserContext, None, None]:
     """
     Provide an authenticated browser context.
