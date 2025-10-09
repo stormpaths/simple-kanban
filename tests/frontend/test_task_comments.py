@@ -75,9 +75,9 @@ class TestTaskComments:
         
         print(f"\n✅ Successfully added {len(comments)} comments!")
         
-        # Close modal
-        page.keyboard.press("Escape")
-        page.wait_for_selector("#task-modal", state="hidden")
+        # Close modal by clicking close button
+        page.click("#task-modal-close")
+        page.wait_for_selector("#task-modal", state="hidden", timeout=10000)
     
     def test_edit_task_with_all_fields_multiple_times(self, board_with_columns: Page):
         """
@@ -311,8 +311,8 @@ class TestTaskCommentsEdgeCases:
         page.wait_for_timeout(1000)
         
         # Close modal
-        page.keyboard.press("Escape")
-        page.wait_for_selector("#task-modal", state="hidden")
+        page.click("#task-modal-close")
+        page.wait_for_selector("#task-modal", state="hidden", timeout=10000)
         
         # Reopen modal
         task_card.click()

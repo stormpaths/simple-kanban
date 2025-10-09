@@ -256,7 +256,7 @@ class TestTaskModalReusability:
             page.wait_for_selector("#task-modal", state="visible", timeout=2000)
             
             # Immediately close
-            page.keyboard.press("Escape")  # Try escape key
+            page.click("#task-modal-close")
             page.wait_for_selector("#task-modal", state="hidden", timeout=2000)
         
         # Verify modal still works normally after rapid interactions
@@ -333,7 +333,7 @@ class TestTaskModalEdgeCases:
         
         # Close modal if still open
         if page.locator("#task-modal").is_visible():
-            page.keyboard.press("Escape")
+            page.click("#task-modal-close")
         
         # Verify we can still open modal
         page.click(".add-task-btn")

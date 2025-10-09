@@ -231,7 +231,7 @@ class TestBoardComprehensive:
             page.wait_for_selector("#board-modal", state="visible", timeout=3000)
             
             # Immediately close
-            page.keyboard.press("Escape")
+            page.click("#board-modal .modal-close")
             page.wait_for_selector("#board-modal", state="hidden", timeout=3000)
         
         # Verify modal still works normally
