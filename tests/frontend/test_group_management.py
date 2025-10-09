@@ -63,8 +63,9 @@ class TestGroupManagement:
         page.wait_for_selector("#create-group-modal", state="hidden", timeout=5000)
         page.wait_for_timeout(1000)
         
-        # Verify group appears in list
-        expect(page.locator(".group-card, .group-item")).to_contain_text(group_name)
+        # Verify group appears in list (use specific selector for the new group)
+        group_card = page.locator(f".group-card:has-text('{group_name}')").first
+        expect(group_card).to_be_visible()
         
         print(f"✅ Group created: {group_name}")
     
@@ -88,31 +89,22 @@ class TestGroupManagement:
         initial_desc = "Initial description"
         
         page.fill("#group-name", initial_name)
-        page.fill("#group-description", initial_desc)
         page.locator("#create-group-form button[type='submit']").click()
         page.wait_for_selector("#create-group-modal", state="hidden")
         page.wait_for_timeout(1000)
         
         # Now edit the group 3 times
-        current_name = initial_name
         for iteration in range(3):
             print(f"\n=== Group Edit Iteration {iteration + 1} ===")
             
-            # Find and click the group to edit
-            group_card = page.locator(f".group-card:has-text('{current_name}'), .group-item:has-text('{current_name}')").first
-            expect(group_card).to_be_visible()
+            # Find and click the group card to view it
+            group_card = page.locator(f".group-card:has-text('{initial_name}')").first
+            group_card.click()
+            page.wait_for_timeout(1000)
             
-            # Click edit button (might be in card or need to click card first)
-            edit_btn = group_card.locator("button:has-text('Edit'), .edit-btn, [title*='Edit']").first
-            if edit_btn.count() > 0:
-                edit_btn.click()
-            else:
-                # Try clicking the card itself
-                group_card.click()
-                page.wait_for_timeout(500)
-                # Then find edit button
-                edit_btn = page.locator("button:has-text('Edit'), .edit-btn").first
-                edit_btn.click()
+            # Click edit button in the group details view
+            edit_btn = page.locator("#edit-group-btn")
+            edit_btn.click()
             
             # Wait for edit modal/form
             page.wait_for_timeout(1000)

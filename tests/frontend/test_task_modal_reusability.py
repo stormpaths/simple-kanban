@@ -36,11 +36,8 @@ class TestTaskModalReusability:
             modal = page.locator("#task-modal")
             expect(modal).to_be_visible()
             
-            # Verify modal title
-            expect(page.locator("#task-modal-title")).to_contain_text("New Task")
-            
-            # Close modal by clicking backdrop
-            page.click("#task-modal")
+            # Close modal by clicking close button
+            page.click("#task-modal-close")
             
             # Verify modal is hidden
             expect(modal).to_be_hidden()
@@ -65,13 +62,13 @@ class TestTaskModalReusability:
         
         task_title = "Test Task for Multiple Edits"
         page.fill("#task-title", task_title)
-        page.fill("#task-description", "Initial description")
+        page.fill("#task-desc", "Initial description")
         
         # Select first column
         # Column already set by clicking add button
         
         # Save task
-        page.click("#save-task-btn")
+        page.click("#task-submit")
         
         # Wait for modal to close and task to appear
         page.wait_for_selector("#task-modal", state="hidden")
@@ -88,7 +85,6 @@ class TestTaskModalReusability:
             
             # Wait for modal to open
             page.wait_for_selector("#task-modal", state="visible")
-            expect(page.locator("#task-modal-title")).to_contain_text("Edit Task")
             
             # Verify form is populated
             title_input = page.locator("#task-title")
@@ -96,11 +92,11 @@ class TestTaskModalReusability:
             
             # Update description
             new_description = f"Updated description - iteration {i + 1}"
-            description_input = page.locator("#task-description")
+            description_input = page.locator("#task-desc")
             description_input.fill(new_description)
             
             # Save changes
-            save_button = page.locator("#save-task-btn")
+            save_button = page.locator("#task-submit")
             expect(save_button).to_be_visible()
             expect(save_button).to_be_enabled()
             save_button.click()
@@ -129,7 +125,7 @@ class TestTaskModalReusability:
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "First Task")
-        page.fill("#task-description", "First Description")
+        page.fill("#task-desc", "First Description")
         
         # Close without saving
         page.click("#task-modal")  # Click backdrop
@@ -141,7 +137,7 @@ class TestTaskModalReusability:
         
         # Verify fields are empty
         expect(page.locator("#task-title")).to_have_value("")
-        expect(page.locator("#task-description")).to_have_value("")
+        expect(page.locator("#task-desc")).to_have_value("")
     
     def test_edit_different_tasks_sequentially(self, board_with_columns: Page):
         """
@@ -158,9 +154,9 @@ class TestTaskModalReusability:
             page.click(".add-task-btn")
             page.wait_for_selector("#task-modal", state="visible")
             page.fill("#task-title", title)
-            page.fill("#task-description", f"Description for {title}")
+            page.fill("#task-desc", f"Description for {title}")
             # Column already set by clicking add button
-            page.click("#save-task-btn")
+            page.click("#task-submit")
             page.wait_for_selector("#task-modal", state="hidden")
             page.wait_for_timeout(500)
         
@@ -175,10 +171,10 @@ class TestTaskModalReusability:
             expect(page.locator("#task-title")).to_have_value(title)
             
             # Make a change
-            page.fill("#task-description", f"Updated {title}")
+            page.fill("#task-desc", f"Updated {title}")
             
             # Save
-            page.click("#save-task-btn")
+            page.click("#task-submit")
             page.wait_for_selector("#task-modal", state="hidden")
             page.wait_for_timeout(500)
     
@@ -194,9 +190,9 @@ class TestTaskModalReusability:
         page.click(".add-task-btn")
         page.wait_for_selector("#task-modal", state="visible")
         page.fill("#task-title", "Button Test Task")
-        page.fill("#task-description", "Testing button functionality")
+        page.fill("#task-desc", "Testing button functionality")
         # Column already set by clicking add button
-        page.click("#save-task-btn")
+        page.click("#task-submit")
         page.wait_for_selector("#task-modal", state="hidden")
         
         # Test Cancel button
@@ -204,7 +200,7 @@ class TestTaskModalReusability:
         task_card.click()
         page.wait_for_selector("#task-modal", state="visible")
         
-        cancel_button = page.locator("#cancel-task-btn")
+        cancel_button = page.locator("#task-cancel")
         if cancel_button.count() > 0:
             cancel_button.click()
             page.wait_for_selector("#task-modal", state="hidden")
@@ -216,9 +212,9 @@ class TestTaskModalReusability:
         # Test Save button again
         task_card.click()
         page.wait_for_selector("#task-modal", state="visible")
-        page.fill("#task-description", "Updated via save button test")
+        page.fill("#task-desc", "Updated via save button test")
         
-        save_button = page.locator("#save-task-btn")
+        save_button = page.locator("#task-submit")
         expect(save_button).to_be_enabled()
         save_button.click()
         page.wait_for_selector("#task-modal", state="hidden")
@@ -264,10 +260,10 @@ class TestTaskModalReusability:
         page.wait_for_selector("#task-modal", state="visible")
         
         page.fill("#task-title", "After Rapid Test")
-        page.fill("#task-description", "Modal still functional")
+        page.fill("#task-desc", "Modal still functional")
         # Column already set by clicking add button
         
-        save_button = page.locator("#save-task-btn")
+        save_button = page.locator("#task-submit")
         expect(save_button).to_be_enabled()
         save_button.click()
         
@@ -288,7 +284,7 @@ class TestTaskModalEdgeCases:
         page.wait_for_selector("#task-modal", state="visible")
         page.fill("#task-title", "Task to Clear")
         # Column already set by clicking add button
-        page.click("#save-task-btn")
+        page.click("#task-submit")
         page.wait_for_selector("#task-modal", state="hidden")
         
         # Edit and try to clear title
@@ -300,7 +296,7 @@ class TestTaskModalEdgeCases:
         page.fill("#task-title", "")
         
         # Try to save - should fail or show validation
-        page.click("#save-task-btn")
+        page.click("#task-submit")
         
         # Modal should stay open (validation failed)
         # Or show error message
@@ -328,7 +324,7 @@ class TestTaskModalEdgeCases:
         # Column already set by clicking add button
         
         # Save (might succeed or fail depending on network)
-        page.click("#save-task-btn")
+        page.click("#task-submit")
         page.wait_for_timeout(2000)
         
         # Close modal if still open

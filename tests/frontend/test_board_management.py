@@ -23,10 +23,10 @@ class TestBoardManagement:
         
         # Fill board details
         page.fill("#board-name", test_board_name)
-        page.fill("#board-description", "Test board description")
+        page.fill("#board-desc", "Test board description")
         
         # Save board
-        page.click("#save-board-btn")
+        page.click("#board-submit")
         
         # Wait for modal to close
         page.wait_for_selector("#board-modal", state="hidden")
@@ -82,7 +82,7 @@ class TestBoardManagement:
         name_input.fill(new_name)
         
         # Save changes
-        page.click("#save-board-btn")
+        page.click("#board-submit")
         
         # Wait for modal to close
         page.wait_for_selector("#board-modal", state="hidden")
@@ -98,18 +98,23 @@ class TestBoardManagement:
         page.click("#new-board-btn")
         page.wait_for_selector("#board-modal", state="visible")
         page.fill("#board-name", test_board_name)
-        page.click("#save-board-btn")
+        page.click("#board-submit")
         page.wait_for_selector("#board-modal", state="hidden")
         
         # Select the test board
         page.select_option("#board-select", label=test_board_name)
         page.wait_for_timeout(1000)
         
-        # Find delete board button
-        delete_button = page.locator("#delete-board-btn, button:has-text('Delete Board')")
+        # Find delete board button (it's in the edit modal)
+        # First open the edit modal
+        page.click("#edit-board-btn")
+        page.wait_for_selector("#board-modal", state="visible")
         
-        if delete_button.count() == 0:
-            pytest.skip("Delete board button not found")
+        # Now click delete button
+        delete_button = page.locator("#board-delete")
+        
+        if not delete_button.is_visible():
+            pytest.skip("Delete board button not visible")
         
         delete_button.click()
         

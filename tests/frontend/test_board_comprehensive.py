@@ -143,9 +143,9 @@ class TestBoardComprehensive:
         edit_btn.click()
         page.wait_for_selector("#board-modal", state="visible")
         
-        # Verify final values
+        # Verify final values (should be iteration 3 - the last edit)
         expect(page.locator("#board-name")).to_have_value(current_name)
-        expect(page.locator("#board-desc")).to_have_value("Updated description - iteration 2")
+        expect(page.locator("#board-desc")).to_have_value("Updated description - iteration 3")
         
         print("✅ All changes persisted correctly!")
     
