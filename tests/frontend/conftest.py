@@ -161,8 +161,8 @@ def authenticated_page(page: Page, base_url: str, test_username: str, test_passw
     # Navigate to login page
     page.goto(base_url)
     
-    # Check if already logged in (has user menu)
-    if page.locator("#user-logout").is_visible():
+    # Check if already logged in (board selector visible)
+    if page.locator("#board-select").is_visible():
         yield page
         return
     
@@ -181,9 +181,12 @@ def authenticated_page(page: Page, base_url: str, test_username: str, test_passw
     
     yield page
     
-    # Cleanup: logout after test
-    if page.locator("#user-logout").is_visible():
-        page.click("#user-logout")
+    # Cleanup: logout after test (open dropdown first)
+    if page.locator("#user-menu-btn").is_visible():
+        page.click("#user-menu-btn")
+        page.wait_for_timeout(500)
+        if page.locator("#user-logout").is_visible():
+            page.click("#user-logout")
 
 
 @pytest.fixture
