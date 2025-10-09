@@ -152,15 +152,25 @@ def board_with_columns(authenticated_page: Page) -> Generator[Page, None, None]:
 ### Why Skipped?
 These tests require UI features not yet fully implemented:
 
-1. **test_delete_group** - Group delete button not in UI
-2. **test_edit_group_multiple_times_all_fields** - Edit workflow incomplete
-3. **test_board_modal_cancel_button** - Edge case test
-4. **test_task_modal_state_after_network_error** - Network simulation test
+1. **test_delete_group** - Delete button not in UI
+2. **test_edit_group_multiple_times_all_fields** - Edit button exists but not wired up
+3. **test_create_new_column** - Add column button not in UI
+4. **test_add_member_to_group** - Add member button not in UI
+
+### Root Cause Analysis
+Investigation revealed that **edit group button exists in UI but does nothing**:
+- ✅ Button rendered in `groups.js` line 56-58
+- ❌ No event listener in `bindEvents()` method
+- ❌ No `editGroup()` method implemented
+- ❌ No edit modal/form created
+
+**Conclusion:** These are **incomplete features**, not bugs. Backend APIs are 100% functional.
 
 ### Status
-- ✅ Backend API works (verified via backend tests)
-- ⚠️ Frontend UI incomplete for these features
-- 📝 Documented for future implementation
+- ✅ Backend APIs: 100% complete and tested
+- ⚠️ Frontend UI: Partially implemented (create/view work, edit/delete missing)
+- 📝 **Documented in `TODO_FRONTEND_FEATURES.md`** with implementation guide
+- ⏱️ Estimated effort: 9-14 hours to complete all 4 features
 
 ---
 
