@@ -71,9 +71,6 @@ class TestGroupManagement:
 
         print(f"✅ Group created: {group_name}")
 
-    @pytest.mark.skip(
-        reason="Group edit workflow needs investigation - edit button not appearing"
-    )
     def test_edit_group_multiple_times_all_fields(
         self, authenticated_page: Page, base_url: str
     ):
@@ -222,7 +219,6 @@ class TestGroupManagement:
 
         print("✅ Cancel button works - group not created")
 
-    @pytest.mark.skip(reason="Group delete UI not implemented yet")
     def test_delete_group(self, authenticated_page: Page, base_url: str):
         """Test deleting a group."""
         page = authenticated_page
