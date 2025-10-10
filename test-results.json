@@ -1,20 +1,20 @@
 {
-  "timestamp": "2025-10-09T15:27:10-07:00",
-  "duration": 17,
+  "timestamp": "2025-10-10T13:31:11-07:00",
+  "duration": 1,
   "mode": "full",
   "backend": {
     "summary": {
       "total": 3,
-      "passed": 2,
-      "failed": 1,
+      "passed": 1,
+      "failed": 2,
       "skipped": 0
     },
     "success": false,
     "results": [
-      "✅ Health Check - Application responding"
+      "❌ Health Check - HTTP 000"
 ,
       "✅ API Key Verification - Key accessible",
-      "❌ Comprehensive Authentication System - Failed (17s)"
+      "❌ Comprehensive Authentication System - Failed (0s)"
     ]
   },
   "frontend": {
