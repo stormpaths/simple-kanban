@@ -1,7 +1,5 @@
-# ============================================================================
-# Base stage - shared dependencies
-# ============================================================================
-FROM python:3.11-slim AS base
+# Production Docker image for Simple Kanban Board
+FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -9,47 +7,23 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment variables
-ENV PYTHONPATH=/app \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-WORKDIR /app
-
-# Copy requirements
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# ============================================================================
-# Test stage - for running tests
-# ============================================================================
-FROM base AS test
-
-# Install test dependencies
-RUN pip install --no-cache-dir \
-    pytest \
-    pytest-cov \
-    pytest-asyncio \
-    httpx
-
-# Copy application code
-COPY . .
-
-# Run tests by default
-CMD ["pytest", "tests/", "-v", "--cov=src", "--cov-report=term-missing"]
-
-# ============================================================================
-# Production stage - final image
-# ============================================================================
-FROM base AS production
-
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Set production environment variables
-ENV OTEL_SERVICE_NAME=simple-kanban \
+# Set environment variables
+ENV PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    OTEL_SERVICE_NAME=simple-kanban \
     OTEL_SERVICE_VERSION=1.0.0 \
     OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+
+# Set up application directory
+WORKDIR /app
+
+# Copy requirements and install dependencies as root first
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY --chown=appuser:appuser . .

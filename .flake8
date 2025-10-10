@@ -1,0 +1,24 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E203, W503, F405, F541
+exclude =
+    .git,
+    __pycache__,
+    .pytest_cache,
+    venv,
+    .venv,
+    htmlcov,
+    .coverage,
+    *.egg-info,
+    build,
+    dist,
+    migrations
+
+# Per-file ignores
+per-file-ignores =
+    # __init__ files can have star imports and unused imports
+    */__init__.py:F401,F403,F405
+    # Test files can have unused imports, variables, and longer lines
+    tests/*:F401,E501,F841,E722
+    # Utils can have unused imports (they're utilities)
+    src/utils/*:F401

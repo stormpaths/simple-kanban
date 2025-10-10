@@ -15,14 +15,16 @@ help:
 	@echo "📚 Simple Kanban Board - Makefile Commands"
 	@echo ""
 	@echo "🧪 Testing Commands:"
-	@echo "  make test              - Run unit tests with coverage"
-	@echo "  make test-all          - Run complete test suite (93% coverage)"
-	@echo "  make test-quick        - Run quick smoke tests (~15s)"
-	@echo "  make test-backend      - Run backend/API tests only (100%)"
-	@echo "  make test-frontend     - Run frontend E2E tests (92%)"
-	@echo "  make test-frontend-json - Run frontend tests with JSON report"
+	@echo "  make test              - Run all tests (backend + frontend) - 93% coverage"
+	@echo "  make test-all          - Same as 'make test'"
+	@echo "  make test-quick        - Quick smoke tests (~15s)"
+	@echo "  make test-backend      - Backend/API tests only (100%)"
+	@echo "  make test-frontend     - Frontend E2E tests only (92%)"
+	@echo "  make test-frontend-json - Frontend tests with JSON report"
 	@echo "  make test-production   - Run tests against production"
 	@echo "  make test-url BASE_URL=<url> - Run tests against custom URL"
+	@echo ""
+	@echo "⚠️  Note: All tests require a deployed service (use 'make dev' first)"
 	@echo ""
 	@echo "🔐 Secrets Management:"
 	@echo "  make secrets           - Generate SOPS-encrypted secrets"
@@ -96,32 +98,30 @@ secrets-check:
 # Testing Targets
 # ============================================================================
 
-# Run unit tests with coverage (containerized)
+# Run all tests (backend + frontend) - DEFAULT
 test:
-	@echo "🧪 Running unit tests with coverage (containerized)..."
-	@echo "📦 Building test container..."
-	docker build -t simple-kanban-test:latest -f Dockerfile --target test .
-	@echo "🧪 Running tests..."
-	docker run --rm simple-kanban-test:latest pytest tests/ -v --cov=src --cov-report=term-missing
-
-# Run complete test suite (backend + frontend)
-test-all:
-	@echo "🧪 Running complete test suite..."
+	@echo "🧪 Running complete test suite (backend + frontend)..."
 	@echo ""
-	@echo "📊 Test Coverage Target: 93% (57/61 tests)"
+	@echo "📊 Test Coverage: 93% (57/61 tests)"
 	@echo "   Backend: 100% (10/10 tests)"
 	@echo "   Frontend: 92% (47/51 tests)"
 	@echo ""
+	@echo "⚠️  Note: Tests run against deployed service"
+	@echo ""
 	./scripts/test-all.sh
 
-# Run quick smoke tests
+# Run all tests (alias for test)
+test-all:
+	@$(MAKE) test
+
+# Run quick smoke tests (~15s)
 test-quick:
 	@echo "🧪 Running quick smoke tests (~15s)..."
 	./scripts/test-all.sh --quick
 
 # Run backend/API tests only
 test-backend:
-	@echo "🧪 Running backend API tests..."
+	@echo "🧪 Running backend API tests only..."
 	@echo ""
 	@echo "📊 Backend Coverage: 100% (10/10 tests)"
 	@echo ""
@@ -177,10 +177,10 @@ format:
 		black src/ tests/"
 	@echo "✅ Code formatted"
 
-# Build Docker image (production)
+# Build Docker image
 build:
-	@echo "🏗️  Building production Docker image..."
-	docker build -t $(PROJECT_NAME):$(IMAGE_TAG) --target production .
+	@echo "🏗️  Building Docker image..."
+	docker build -t $(PROJECT_NAME):$(IMAGE_TAG) .
 
 # Deploy using Helm
 deploy:
