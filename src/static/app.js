@@ -1001,7 +1001,7 @@ class KanbanApp {
             });
             
             this.hideColumnModal();
-            await this.loadBoard(this.currentBoard.id);
+            await this.selectBoard(this.currentBoard.id);
             this.showNotification(`Column "${newColumn.name}" created successfully!`);
             
         } catch (error) {

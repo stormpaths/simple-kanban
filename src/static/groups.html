@@ -212,9 +212,40 @@
                 </div>
             </div>
         </div>
+
+        <!-- Edit Group Modal -->
+        <div id="edit-group-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Edit Group</h3>
+                    <button class="modal-close" id="edit-group-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-group-form">
+                        <div class="form-group">
+                            <label for="edit-group-name">Group Name</label>
+                            <input type="text" id="edit-group-name" name="name" required 
+                                   placeholder="Enter group name" maxlength="255">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-group-description">Description (Optional)</label>
+                            <textarea id="edit-group-description" name="description" 
+                                      placeholder="Describe the purpose of this group" 
+                                      maxlength="1000" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit-group">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </main>
+        </div>
 
         <!-- Notification System -->
         <div id="notification" class="notification">

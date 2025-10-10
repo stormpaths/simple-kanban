@@ -96,10 +96,24 @@ class GroupsPage {
             this.hideCreateGroupModal();
         });
 
-        // Form submission
+        // Edit group modal controls
+        document.getElementById('edit-group-close').addEventListener('click', () => {
+            this.hideEditGroupModal();
+        });
+
+        document.getElementById('cancel-edit-group').addEventListener('click', () => {
+            this.hideEditGroupModal();
+        });
+
+        // Form submissions
         document.getElementById('create-group-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.createGroup();
+        });
+
+        document.getElementById('edit-group-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateGroup();
         });
 
         // Group details navigation
@@ -109,6 +123,14 @@ class GroupsPage {
 
         document.getElementById('create-group-board-btn').addEventListener('click', () => {
             this.createGroupBoard();
+        });
+
+        document.getElementById('edit-group-btn').addEventListener('click', () => {
+            this.showEditGroupModal();
+        });
+
+        document.getElementById('delete-group-btn').addEventListener('click', () => {
+            this.confirmDeleteGroup();
         });
 
         // User menu is handled by auth.js - no duplicate handlers needed
@@ -411,6 +433,100 @@ class GroupsPage {
             this.loadGroupBoards(this.currentGroup.id);
         } catch (error) {
             console.error('Error creating group board:', error);
+            this.showError(error.message);
+        }
+    }
+
+    showEditGroupModal() {
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        // Populate form with current group data
+        document.getElementById('edit-group-name').value = this.currentGroup.name;
+        document.getElementById('edit-group-description').value = this.currentGroup.description || '';
+        
+        // Show modal
+        document.getElementById('edit-group-modal').style.display = 'block';
+    }
+
+    hideEditGroupModal() {
+        document.getElementById('edit-group-modal').style.display = 'none';
+    }
+
+    async updateGroup() {
+        if (!this.currentGroup) return;
+
+        const name = document.getElementById('edit-group-name').value;
+        const description = document.getElementById('edit-group-description').value;
+
+        try {
+            const response = await fetch(`/api/groups/${this.currentGroup.id}`, {
+                method: 'PUT',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    name: name,
+                    description: description || null
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to update group');
+            }
+
+            const updatedGroup = await response.json();
+            this.showSuccess(`Group "${updatedGroup.name}" updated successfully!`);
+            this.hideEditGroupModal();
+            
+            // Refresh groups and show updated details
+            await this.loadGroups();
+            this.showGroupDetails(updatedGroup.id);
+        } catch (error) {
+            console.error('Error updating group:', error);
+            this.showError(error.message);
+        }
+    }
+
+    confirmDeleteGroup() {
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to delete the group "${this.currentGroup.name}"?\n\nThis will:\n- Remove all members from the group\n- Unlink all group boards (boards will remain but become personal)\n- This action cannot be undone`;
+        
+        if (confirm(confirmMessage)) {
+            this.deleteGroup();
+        }
+    }
+
+    async deleteGroup() {
+        if (!this.currentGroup) return;
+
+        const groupId = this.currentGroup.id;
+        const groupName = this.currentGroup.name;
+
+        try {
+            const response = await fetch(`/api/groups/${groupId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to delete group');
+            }
+
+            this.showSuccess(`Group "${groupName}" deleted successfully!`);
+            this.currentGroup = null;
+            
+            // Refresh groups list
+            await this.loadGroups();
+            this.showGroupsList();
+        } catch (error) {
+            console.error('Error deleting group:', error);
             this.showError(error.message);
         }
     }
