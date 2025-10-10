@@ -208,33 +208,50 @@ simple-kanban/
 - ✅ **Frontend**: 92% (47/51 tests)
 - ⏭️ **Skipped**: 4 tests (incomplete UI features documented in TODO_FRONTEND_FEATURES.md)
 
+### Quick Start - Makefile Commands
+```bash
+# Run all tests (backend + frontend) against dev environment
+make test
+
+# Run specific test suites
+make test-backend      # Backend/API tests only (100%)
+make test-frontend     # Frontend E2E tests only (92%)
+make test-quick        # Quick smoke tests (~15s)
+
+# Test against production
+make test-production   # Full suite against https://kanban.stormpath.net
+
+# Test against custom URL
+make test-url BASE_URL=https://your-url.com
+
+# Code quality
+make format            # Format code with black (containerized)
+make lint              # Run flake8 linting (containerized)
+
+# See all available commands
+make help
+```
+
 ### Automated Testing (Integrated with Skaffold)
 ```bash
 # Deploy with automatic testing
 skaffold run -p dev   # Runs full test battery automatically (soft-fail)
 skaffold run -p prod  # Runs full test battery automatically (hard-fail)
 
-# Manual test execution
+# Manual test execution (scripts)
 ./scripts/test-all.sh --quick    # Quick smoke tests (~15s)
 ./scripts/test-all.sh --full     # Full test battery (~45s)
 ./scripts/test-all.sh --verbose  # Detailed output for debugging
 ```
 
-### Production Testing
-```bash
-# Test against production deployment
-BASE_URL=https://kanban.stormpath.net ./scripts/test-all.sh
+### Environment Detection
+Tests automatically detect the target environment:
+1. **`$BASE_URL`** environment variable (if set)
+2. **Kubernetes ingress** in `apps-dev` namespace (dev deployment)
+3. **Fallback** to `https://kanban.stormpath.dev` (dev)
 
-# Backend/API tests only (works in production)
-BASE_URL=https://kanban.stormpath.net ./scripts/test-auth-comprehensive.sh
-
-# Frontend tests (requires local Docker)
-cd tests/frontend
-BASE_URL=https://kanban.stormpath.net docker-compose run --rm frontend-tests pytest -v
-
-# Generate JSON report
-./scripts/test-frontend-json.sh  # Creates frontend-test-results.json
-```
+**Production URL**: `https://kanban.stormpath.net`  
+**Development URL**: `https://kanban.stormpath.dev`
 
 ### Test Categories
 - **Health Checks**: Application availability and responsiveness
