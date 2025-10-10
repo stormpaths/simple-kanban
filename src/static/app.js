@@ -37,6 +37,12 @@ class KanbanApp {
         document.getElementById('board-form').addEventListener('submit', (e) => this.handleBoardSubmit(e));
         document.getElementById('board-delete').addEventListener('click', () => this.deleteCurrentBoard());
 
+        // Column modal
+        document.getElementById('add-column-btn').addEventListener('click', () => this.showColumnModal());
+        document.getElementById('column-modal-close').addEventListener('click', () => this.hideColumnModal());
+        document.getElementById('column-cancel').addEventListener('click', () => this.hideColumnModal());
+        document.getElementById('column-form').addEventListener('submit', (e) => this.handleColumnSubmit(e));
+
         // Task modal
         document.getElementById('task-modal-close').addEventListener('click', () => this.hideTaskModal());
         document.getElementById('task-cancel').addEventListener('click', () => this.hideTaskModal());
@@ -48,6 +54,9 @@ class KanbanApp {
         // Close modals on backdrop click
         document.getElementById('board-modal').addEventListener('click', (e) => {
             if (e.target.id === 'board-modal') this.hideBoardModal();
+        });
+        document.getElementById('column-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'column-modal') this.hideColumnModal();
         });
         document.getElementById('task-modal').addEventListener('click', (e) => {
             if (e.target.id === 'task-modal') this.hideTaskModal();
@@ -938,6 +947,66 @@ class KanbanApp {
         } catch (error) {
             Debug.error('Failed to delete board:', error);
             this.showNotification('Failed to delete board. Please try again.', 'error');
+        }
+    }
+
+    // Column Modal Management
+    showColumnModal() {
+        if (!this.currentBoard) {
+            this.showNotification('Please select a board first', 'error');
+            return;
+        }
+
+        const modal = document.getElementById('column-modal');
+        const form = document.getElementById('column-form');
+        
+        // Reset form
+        form.reset();
+        
+        // Show modal
+        modal.style.display = 'block';
+        setTimeout(() => modal.classList.add('show'), 10);
+        
+        // Focus on name input
+        document.getElementById('column-name').focus();
+    }
+
+    hideColumnModal() {
+        const modal = document.getElementById('column-modal');
+        modal.classList.remove('show');
+        setTimeout(() => modal.style.display = 'none', 300);
+    }
+
+    async handleColumnSubmit(e) {
+        e.preventDefault();
+        
+        if (!this.currentBoard) {
+            this.showNotification('No board selected', 'error');
+            return;
+        }
+
+        const form = e.target;
+        const formData = new FormData(form);
+        
+        const columnData = {
+            name: formData.get('name'),
+            board_id: this.currentBoard.id,
+            position: formData.get('position') ? parseInt(formData.get('position')) : this.columns.length
+        };
+
+        try {
+            const newColumn = await this.apiCall('/columns/', {
+                method: 'POST',
+                body: JSON.stringify(columnData)
+            });
+            
+            this.hideColumnModal();
+            await this.loadBoard(this.currentBoard.id);
+            this.showNotification(`Column "${newColumn.name}" created successfully!`);
+            
+        } catch (error) {
+            Debug.error('Failed to create column:', error);
+            this.showNotification('Failed to create column. Please try again.', 'error');
         }
     }
 
