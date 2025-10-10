@@ -1,6 +1,7 @@
 """
 Database configuration and session management.
 """
+
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -17,6 +18,7 @@ DATABASE_URL = settings.database_url
 # For testing, use SQLite if asyncpg is not available
 try:
     import asyncpg
+
     ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 except ImportError:
     # Fallback to SQLite for testing

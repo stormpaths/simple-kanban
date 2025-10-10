@@ -1,6 +1,7 @@
 """
 Database models for the kanban application.
 """
+
 from .base import Base, TimestampMixin
 from .user import User
 from .oidc_provider import OIDCProvider
@@ -18,12 +19,12 @@ __all__ = [
     "User",
     "OIDCProvider",
     "Group",
-    "UserGroup", 
+    "UserGroup",
     "GroupRole",
     "ApiKey",
     "ApiKeyScope",
     "Board",
     "Column",
     "Task",
-    "TaskComment"
+    "TaskComment",
 ]

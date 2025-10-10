@@ -1,6 +1,7 @@
 """
 Task comment API endpoints.
 """
+
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,10 +15,10 @@ from ..models.user import User
 from ..models.board import Board
 from ..models.column import Column
 from ..schemas.task_comment import (
-    TaskCommentCreate, 
-    TaskCommentUpdate, 
+    TaskCommentCreate,
+    TaskCommentUpdate,
     TaskCommentResponse,
-    TaskCommentListResponse
+    TaskCommentListResponse,
 )
 from ..auth.dependencies import get_current_user
 
@@ -40,12 +41,12 @@ async def _can_access_task(db: AsyncSession, user: User, task_id: int) -> bool:
 async def get_task_comments(
     task_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all comments for a task."""
     if not await _can_access_task(db, current_user, task_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     result = await db.execute(
         select(TaskComment)
         .where(TaskComment.task_id == task_id)
@@ -53,7 +54,7 @@ async def get_task_comments(
         .order_by(TaskComment.created_at.desc())
     )
     comments = result.scalars().all()
-    
+
     # Convert to response format with author names
     comment_responses = []
     for comment in comments:
@@ -64,13 +65,12 @@ async def get_task_comments(
             "author_id": comment.author_id,
             "author_name": comment.author.full_name or comment.author.username,
             "created_at": comment.created_at,
-            "updated_at": comment.updated_at
+            "updated_at": comment.updated_at,
         }
         comment_responses.append(TaskCommentResponse(**comment_dict))
-    
+
     return TaskCommentListResponse(
-        comments=comment_responses,
-        total=len(comment_responses)
+        comments=comment_responses, total=len(comment_responses)
     )
 
 
@@ -79,29 +79,27 @@ async def create_task_comment(
     task_id: int,
     comment_data: TaskCommentCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new comment on a task."""
     if not await _can_access_task(db, current_user, task_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     # Ensure task_id matches URL parameter
     if comment_data.task_id != task_id:
         raise HTTPException(status_code=400, detail="Task ID mismatch")
-    
+
     comment = TaskComment(
-        content=comment_data.content,
-        task_id=task_id,
-        author_id=current_user.id
+        content=comment_data.content, task_id=task_id, author_id=current_user.id
     )
-    
+
     db.add(comment)
     await db.commit()
     await db.refresh(comment)
-    
+
     # Load author relationship for response
     await db.refresh(comment, ["author"])
-    
+
     return TaskCommentResponse(
         id=comment.id,
         content=comment.content,
@@ -109,7 +107,7 @@ async def create_task_comment(
         author_id=comment.author_id,
         author_name=comment.author.full_name or comment.author.username,
         created_at=comment.created_at,
-        updated_at=comment.updated_at
+        updated_at=comment.updated_at,
     )
 
 
@@ -118,7 +116,7 @@ async def update_task_comment(
     comment_id: int,
     comment_data: TaskCommentUpdate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update a task comment (only by the author)."""
     result = await db.execute(
@@ -127,22 +125,24 @@ async def update_task_comment(
         .options(selectinload(TaskComment.author))
     )
     comment = result.scalar_one_or_none()
-    
+
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-    
+
     # Check if user is the author of the comment
     if comment.author_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to edit this comment")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to edit this comment"
+        )
+
     # Check if user can access the task
     if not await _can_access_task(db, current_user, comment.task_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     comment.content = comment_data.content
     await db.commit()
     await db.refresh(comment)
-    
+
     return TaskCommentResponse(
         id=comment.id,
         content=comment.content,
@@ -150,7 +150,7 @@ async def update_task_comment(
         author_id=comment.author_id,
         author_name=comment.author.full_name or comment.author.username,
         created_at=comment.created_at,
-        updated_at=comment.updated_at
+        updated_at=comment.updated_at,
     )
 
 
@@ -158,27 +158,26 @@ async def update_task_comment(
 async def delete_task_comment(
     comment_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a task comment (only by the author)."""
-    result = await db.execute(
-        select(TaskComment)
-        .where(TaskComment.id == comment_id)
-    )
+    result = await db.execute(select(TaskComment).where(TaskComment.id == comment_id))
     comment = result.scalar_one_or_none()
-    
+
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-    
+
     # Check if user is the author of the comment
     if comment.author_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
-    
+        raise HTTPException(
+            status_code=403, detail="Not authorized to delete this comment"
+        )
+
     # Check if user can access the task
     if not await _can_access_task(db, current_user, comment.task_id):
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     await db.delete(comment)
     await db.commit()
-    
+
     return {"message": "Comment deleted successfully"}

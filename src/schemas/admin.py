@@ -1,6 +1,7 @@
 """
 Admin-related Pydantic schemas for API requests and responses.
 """
+
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -8,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class UserStatsResponse(BaseModel):
     """Response schema for user statistics."""
+
     id: int
     username: str
     email: str
@@ -17,7 +19,9 @@ class UserStatsResponse(BaseModel):
     is_verified: bool
     created_at: datetime
     board_count: int = Field(description="Number of boards owned by the user")
-    task_count: int = Field(description="Total number of tasks across all user's boards")
+    task_count: int = Field(
+        description="Total number of tasks across all user's boards"
+    )
 
     class Config:
         from_attributes = True
@@ -25,5 +29,10 @@ class UserStatsResponse(BaseModel):
 
 class UserUpdateRequest(BaseModel):
     """Request schema for updating user properties."""
-    is_active: Optional[bool] = Field(None, description="Enable or disable the user account")
-    is_admin: Optional[bool] = Field(None, description="Grant or revoke admin privileges")
+
+    is_active: Optional[bool] = Field(
+        None, description="Enable or disable the user account"
+    )
+    is_admin: Optional[bool] = Field(
+        None, description="Grant or revoke admin privileges"
+    )

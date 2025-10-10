@@ -16,7 +16,7 @@ from .middleware import (
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
     CSRFProtectionMiddleware,
-    setup_redis_client
+    setup_redis_client,
 )
 from typing import Dict, Any
 import logging
@@ -24,14 +24,23 @@ import os
 
 from .database import create_tables
 from .migrations.group_migration import run_group_migrations
-from .api import boards, columns, tasks, auth, oidc, task_comments, admin, groups, api_keys
+from .api import (
+    boards,
+    columns,
+    tasks,
+    auth,
+    oidc,
+    task_comments,
+    admin,
+    groups,
+    api_keys,
+)
 from .auth.dependencies import require_api_scope
 
 # Configure logging
 log_level = logging.DEBUG if settings.debug else logging.INFO
 logging.basicConfig(
-    level=log_level,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -41,15 +50,16 @@ app = FastAPI(
     description="Self-hosted kanban board with drag-and-drop functionality",
     version="1.0.0",
     docs_url=None,  # Disable default docs
-    redoc_url=None  # Disable default redoc
+    redoc_url=None,  # Disable default redoc
 )
+
 
 # Add exception handler for validation errors (422)
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle Pydantic validation errors with detailed logging."""
     logger.error(f"422 Validation error on {request.method} {request.url}")
-    
+
     # Get request body for debugging
     try:
         body = await request.body()
@@ -59,17 +69,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             logger.error("Request body: empty")
     except Exception as e:
         logger.error(f"Could not read request body: {e}")
-    
+
     # Log headers for debugging auth issues
     logger.error(f"Request headers: {dict(request.headers)}")
-    
+
     # Log detailed validation errors
     logger.error(f"Validation errors: {exc.errors()}")
-    
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.errors()}
-    )
+
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
 
 # Setup Redis client for rate limiting
 redis_client = setup_redis_client()
@@ -104,6 +112,7 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+
 # Create database tables on startup
 @app.on_event("startup")
 async def startup_event():
@@ -111,7 +120,7 @@ async def startup_event():
     logger.info("Creating database tables...")
     create_tables()
     logger.info("Database tables created successfully")
-    
+
     logger.info("Running group management migrations...")
     run_group_migrations()
     logger.info("Group management migrations completed")
@@ -122,47 +131,41 @@ async def root():
     """Serve the main kanban board interface."""
     static_dir = os.path.join(os.path.dirname(__file__), "static")
     index_path = os.path.join(static_dir, "index.html")
-    
+
     if os.path.exists(index_path):
         return FileResponse(index_path)
     else:
-        return {
-            "message": "simple-kanban API",
-            "status": "running",
-            "docs": "/docs"
-        }
+        return {"message": "simple-kanban API", "status": "running", "docs": "/docs"}
+
 
 @app.get("/admin")
 async def admin_panel():
     """Serve the admin panel interface."""
     static_dir = os.path.join(os.path.dirname(__file__), "static")
     admin_path = os.path.join(static_dir, "admin.html")
-    
+
     if os.path.exists(admin_path):
         return FileResponse(admin_path)
     else:
         return {"error": "Admin panel not found"}
 
+
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint for container orchestration."""
-    return HealthResponse(
-        status="healthy",
-        version="1.0.0"
-    )
+    return HealthResponse(status="healthy", version="1.0.0")
+
 
 @app.post("/echo", response_model=MessageResponse)
 async def echo_message(request: MessageRequest):
     """Echo endpoint for testing API functionality."""
     logger.info(f"Received message: {request.message}")
-    
+
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty")
-    
-    return MessageResponse(
-        echo=request.message,
-        length=len(request.message)
-    )
+
+    return MessageResponse(echo=request.message, length=len(request.message))
+
 
 @app.get("/metrics")
 async def metrics():
@@ -170,48 +173,49 @@ async def metrics():
     return {
         "requests_total": 0,  # Implement proper metrics collection
         "uptime_seconds": 0,
-        "memory_usage_mb": 0
+        "memory_usage_mb": 0,
     }
 
 
 @app.get("/docs")
-async def secure_docs(user = Depends(require_api_scope("docs"))):
+async def secure_docs(user=Depends(require_api_scope("docs"))):
     """
     Secure API documentation endpoint.
-    
+
     Requires authentication with 'docs' scope API key or valid JWT token.
     """
     from fastapi.openapi.docs import get_swagger_ui_html
+
     return get_swagger_ui_html(
         openapi_url="/openapi.json",
         title=f"{app.title} - Swagger UI",
-        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png"
+        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png",
     )
 
 
 @app.get("/redoc")
-async def secure_redoc(user = Depends(require_api_scope("docs"))):
+async def secure_redoc(user=Depends(require_api_scope("docs"))):
     """
     Secure ReDoc documentation endpoint.
-    
+
     Requires authentication with 'docs' scope API key or valid JWT token.
     """
     from fastapi.openapi.docs import get_redoc_html
-    return get_redoc_html(
-        openapi_url="/openapi.json",
-        title=f"{app.title} - ReDoc"
-    )
+
+    return get_redoc_html(openapi_url="/openapi.json", title=f"{app.title} - ReDoc")
 
 
 @app.get("/openapi.json")
-async def secure_openapi(user = Depends(require_api_scope("docs"))):
+async def secure_openapi(user=Depends(require_api_scope("docs"))):
     """
     Secure OpenAPI schema endpoint.
-    
+
     Requires authentication with 'docs' scope API key or valid JWT token.
     """
     return app.openapi()
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

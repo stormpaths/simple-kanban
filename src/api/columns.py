@@ -3,6 +3,7 @@ Column management API routes.
 
 Provides CRUD operations for kanban board columns.
 """
+
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,11 +11,14 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Board, Column
-from ..schemas import ColumnCreate, ColumnResponse, ColumnUpdate, ColumnWithTasksResponse
+from ..schemas import (
+    ColumnCreate,
+    ColumnResponse,
+    ColumnUpdate,
+    ColumnWithTasksResponse,
+)
 
 router = APIRouter(prefix="/columns", tags=["columns"])
-
-
 
 
 @router.post("/", response_model=ColumnResponse, status_code=status.HTTP_201_CREATED)
@@ -24,14 +28,11 @@ async def create_column(column: ColumnCreate, db: Session = Depends(get_db)):
     board = db.query(Board).filter(Board.id == column.board_id).first()
     if not board:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Board not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Board not found"
         )
-    
+
     db_column = Column(
-        name=column.name,
-        position=column.position,
-        board_id=column.board_id
+        name=column.name, position=column.position, board_id=column.board_id
     )
     db.add(db_column)
     db.commit()
@@ -46,12 +47,16 @@ async def list_board_columns(board_id: int, db: Session = Depends(get_db)):
     board = db.query(Board).filter(Board.id == board_id).first()
     if not board:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Board not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Board not found"
         )
-    
-    columns = db.query(Column).filter(Column.board_id == board_id).order_by(Column.position).all()
-    
+
+    columns = (
+        db.query(Column)
+        .filter(Column.board_id == board_id)
+        .order_by(Column.position)
+        .all()
+    )
+
     # Convert to response format with tasks
     result = []
     for col in columns:
@@ -69,13 +74,13 @@ async def list_board_columns(board_id: int, db: Session = Depends(get_db)):
                     "description": task.description,
                     "position": task.position,
                     "created_at": task.created_at.isoformat(),
-                    "updated_at": task.updated_at.isoformat()
+                    "updated_at": task.updated_at.isoformat(),
                 }
                 for task in col.tasks
-            ]
+            ],
         }
         result.append(col_dict)
-    
+
     return result
 
 
@@ -85,10 +90,9 @@ async def get_column(column_id: int, db: Session = Depends(get_db)):
     column = db.query(Column).filter(Column.id == column_id).first()
     if not column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Column not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Column not found"
         )
-    
+
     # Convert to response format
     col_dict = {
         "id": column.id,
@@ -102,34 +106,31 @@ async def get_column(column_id: int, db: Session = Depends(get_db)):
                 "id": task.id,
                 "title": task.title,
                 "description": task.description,
-                "position": task.position
+                "position": task.position,
             }
             for task in column.tasks
-        ]
+        ],
     }
-    
+
     return col_dict
 
 
 @router.put("/{column_id}", response_model=ColumnResponse)
 async def update_column(
-    column_id: int,
-    column_update: ColumnUpdate,
-    db: Session = Depends(get_db)
+    column_id: int, column_update: ColumnUpdate, db: Session = Depends(get_db)
 ):
     """Update a column's name or position."""
     column = db.query(Column).filter(Column.id == column_id).first()
     if not column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Column not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Column not found"
         )
-    
+
     if column_update.name is not None:
         column.name = column_update.name
     if column_update.position is not None:
         column.position = column_update.position
-    
+
     db.commit()
     db.refresh(column)
     return column
@@ -141,34 +142,35 @@ async def delete_column(column_id: int, db: Session = Depends(get_db)):
     column = db.query(Column).filter(Column.id == column_id).first()
     if not column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Column not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Column not found"
         )
-    
+
     db.delete(column)
     db.commit()
 
 
 @router.post("/{column_id}/reorder", status_code=status.HTTP_200_OK)
 async def reorder_column(
-    column_id: int,
-    new_position: int,
-    db: Session = Depends(get_db)
+    column_id: int, new_position: int, db: Session = Depends(get_db)
 ):
     """Reorder a column within its board."""
     column = db.query(Column).filter(Column.id == column_id).first()
     if not column:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Column not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Column not found"
         )
-    
+
     old_position = column.position
     board_id = column.board_id
-    
+
     # Get all columns in the board
-    columns = db.query(Column).filter(Column.board_id == board_id).order_by(Column.position).all()
-    
+    columns = (
+        db.query(Column)
+        .filter(Column.board_id == board_id)
+        .order_by(Column.position)
+        .all()
+    )
+
     # Update positions
     if new_position > old_position:
         # Moving right - shift columns left
@@ -180,9 +182,9 @@ async def reorder_column(
         for col in columns:
             if new_position <= col.position < old_position:
                 col.position += 1
-    
+
     # Set new position
     column.position = new_position
-    
+
     db.commit()
     return {"message": "Column reordered successfully"}

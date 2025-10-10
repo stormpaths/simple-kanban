@@ -1,6 +1,7 @@
 """
 Task-related Pydantic schemas.
 """
+
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
@@ -8,6 +9,7 @@ from datetime import datetime
 
 class TaskCreate(BaseModel):
     """Schema for creating a new task."""
+
     title: str
     description: Optional[str] = None
     column_id: int
@@ -16,6 +18,7 @@ class TaskCreate(BaseModel):
 
 class TaskUpdate(BaseModel):
     """Schema for updating a task."""
+
     title: Optional[str] = None
     description: Optional[str] = None
     position: Optional[int] = None
@@ -23,12 +26,14 @@ class TaskUpdate(BaseModel):
 
 class TaskMove(BaseModel):
     """Schema for moving a task to a different column/position."""
+
     column_id: int
     position: int
 
 
 class TaskResponse(BaseModel):
     """Schema for task response."""
+
     id: int
     title: str
     description: Optional[str]
