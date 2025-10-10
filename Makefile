@@ -96,10 +96,13 @@ secrets-check:
 # Testing Targets
 # ============================================================================
 
-# Run unit tests with coverage
+# Run unit tests with coverage (containerized)
 test:
-	@echo "🧪 Running unit tests with coverage..."
-	pytest tests/ -v --cov=src --cov-report=html --cov-report=term-missing
+	@echo "🧪 Running unit tests with coverage (containerized)..."
+	@echo "📦 Building test container..."
+	docker build -t simple-kanban-test:latest -f Dockerfile --target test .
+	@echo "🧪 Running tests..."
+	docker run --rm simple-kanban-test:latest pytest tests/ -v --cov=src --cov-report=term-missing
 
 # Run complete test suite (backend + frontend)
 test-all:
@@ -157,19 +160,27 @@ test-url:
 	fi
 	BASE_URL=$(BASE_URL) ./scripts/test-all.sh
 
-# Code quality checks
+# Code quality checks (containerized)
 lint:
-	black --check src/ tests/
-	flake8 src/ tests/
-	mypy src/
+	@echo "🔍 Running code quality checks (containerized)..."
+	docker run --rm -v $(PWD):/app -w /app python:3.11-slim sh -c "\
+		pip install -q black flake8 mypy && \
+		black --check src/ tests/ && \
+		flake8 src/ tests/ && \
+		mypy src/"
 
-# Format code
+# Format code (containerized)
 format:
-	black src/ tests/
+	@echo "✨ Formatting code (containerized)..."
+	docker run --rm -v $(PWD):/app -w /app python:3.11-slim sh -c "\
+		pip install -q black && \
+		black src/ tests/"
+	@echo "✅ Code formatted"
 
-# Build Docker image
+# Build Docker image (production)
 build:
-	docker build -t $(PROJECT_NAME):$(IMAGE_TAG) .
+	@echo "🏗️  Building production Docker image..."
+	docker build -t $(PROJECT_NAME):$(IMAGE_TAG) --target production .
 
 # Deploy using Helm
 deploy:
