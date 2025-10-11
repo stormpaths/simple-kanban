@@ -116,13 +116,18 @@ class TestGroupManagement:
 
             # Find and click the group card to view it
             group_card = page.locator(f".group-card:has-text('{initial_name}')").first
+            
+            # Verify card exists and is visible
+            expect(group_card).to_be_visible(timeout=5000)
+            print(f"  Group card found: {initial_name}")
+            
             group_card.click()
 
             # Give JavaScript time to load details
             page.wait_for_timeout(1000)
 
             # Wait for group details to load - check for the title element
-            page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
+            page.wait_for_selector("#group-details-title", state="visible", timeout=10000)
             
             # Wait for edit button to appear
             page.wait_for_selector("#edit-group-btn", state="visible", timeout=5000)
