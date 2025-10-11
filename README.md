@@ -214,9 +214,9 @@ simple-kanban/
 
 ## Testing
 
-### 🎯 **Test Coverage: 100%** (76/76 tests passing)
+### 🎯 **Test Coverage: 96%** (68/70 tests passing)
 - ✅ **Backend**: 100% (10/10 tests)
-- ✅ **Frontend**: 100% (51/51 tests)
+- ✅ **Frontend**: 96% (49/51 tests) - 2 skipped (conditional)
 - ✅ **Member Management**: 100% (19/19 tests)
 - ✅ **Group Collaboration**: 100% (all tests passing)
 - ✅ **Authentication**: 100% (dual auth validation)
