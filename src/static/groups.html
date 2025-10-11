@@ -158,7 +158,7 @@
                         <div class="group-members-card">
                             <div class="card-header">
                                 <h3>Members</h3>
-                                <button class="btn btn-sm btn-primary" id="invite-member-btn">
+                                <button class="btn btn-sm btn-primary" id="invite-member-btn" onclick="console.log('Button clicked!'); if(window.groupsPage) { window.groupsPage.showInviteMemberModal(); } else { console.error('groupsPage not found'); }">
                                     <i class="fas fa-user-plus"></i>
                                     Invite Member
                                 </button>
