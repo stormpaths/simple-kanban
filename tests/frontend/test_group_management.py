@@ -25,25 +25,37 @@ class TestGroupManagement:
         # Verify page elements
         expect(page.locator("h1")).to_contain_text("Group Management")
         expect(page.locator("#create-group-btn")).to_be_visible()
-
         print("✅ Groups page loaded successfully")
 
     def test_create_group_with_all_fields(
         self, authenticated_page: Page, base_url: str
     ):
-        """
-        Test creating a group with all fields populated.
-
-        Validates that both name and description are saved correctly.
-        """
+        """Test creating a group with all fields filled."""
         page = authenticated_page
+
+        # Listen for console messages to debug
+        page.on("console", lambda msg: print(f"CONSOLE: {msg.type}: {msg.text}"))
+        page.on("pageerror", lambda err: print(f"PAGE ERROR: {err}"))
 
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
 
+        print("✅ Create button found, clicking...")
+        
         # Click create group button
         page.click("#create-group-btn")
+        
+        # Give it a moment
+        page.wait_for_timeout(1000)
+        
+        # Check if modal exists in DOM
+        modal_exists = page.locator("#create-group-modal").count()
+        print(f"Modal count in DOM: {modal_exists}")
+        
+        if modal_exists > 0:
+            modal_display = page.locator("#create-group-modal").evaluate("el => window.getComputedStyle(el).display")
+            print(f"Modal display style: {modal_display}")
 
         # Wait for modal
         page.wait_for_selector("#create-group-modal", state="visible")
@@ -105,6 +117,9 @@ class TestGroupManagement:
             group_card = page.locator(f".group-card:has-text('{initial_name}')").first
             group_card.click()
 
+            # Give JavaScript time to load details
+            page.wait_for_timeout(500)
+
             # Wait for group details to load - check for the title element
             page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
             
@@ -114,6 +129,9 @@ class TestGroupManagement:
             # Click edit button in the group details view
             edit_btn = page.locator("#edit-group-btn")
             edit_btn.click()
+
+            # Give JavaScript time to show modal
+            page.wait_for_timeout(500)
 
             # Wait for edit modal to appear
             page.wait_for_selector("#edit-group-modal", state="visible", timeout=5000)
@@ -247,6 +265,9 @@ class TestGroupManagement:
         # Click on the group to open details
         group_card = page.locator(f".group-card:has-text('{group_name}')").first
         group_card.click()
+        
+        # Give JavaScript time to load details
+        page.wait_for_timeout(500)
         
         # Wait for group details to load - check for the title element
         page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
