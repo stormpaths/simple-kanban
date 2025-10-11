@@ -99,6 +99,7 @@ class TestGroupManagement:
 
         # Create a group first
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         initial_name = f"Multi-Edit Group {int(page.evaluate('Date.now()'))}"
@@ -251,6 +252,7 @@ class TestGroupManagement:
 
         # Create a group to delete
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         group_name = f"Delete Test Group {int(page.evaluate('Date.now()'))}"
