@@ -286,8 +286,10 @@ class GroupsPage {
         document.getElementById('member-count').textContent = group.member_count;
         document.getElementById('group-created').textContent = this.formatDate(group.created_at);
         
-        // Find user's role
+        // Find user's role and add it to currentGroup
         const userRole = this.groups.find(g => g.id === group.id)?.user_role || 'member';
+        this.currentGroup.user_role = userRole; // Store it in currentGroup for later use
+        
         const roleElement = document.getElementById('user-role');
         roleElement.textContent = userRole;
         roleElement.className = `role-badge role-${userRole}`;
