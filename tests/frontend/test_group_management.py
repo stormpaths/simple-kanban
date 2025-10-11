@@ -184,6 +184,7 @@ class TestGroupManagement:
         # Create 3 groups sequentially
         for i in range(3):
             page.click("#create-group-btn")
+            page.wait_for_timeout(1000)
             page.wait_for_selector("#create-group-modal", state="visible")
 
             group_name = (
@@ -217,6 +218,7 @@ class TestGroupManagement:
 
         # Open create modal
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         # Fill form
@@ -316,6 +318,7 @@ class TestGroupMemberManagement:
 
         # Create a group
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         group_name = f"Member Test Group {int(page.evaluate('Date.now()'))}"
@@ -368,6 +371,7 @@ class TestGroupMemberManagement:
 
         # Create a group
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         group_name = f"Members List Group {int(page.evaluate('Date.now()'))}"
@@ -409,6 +413,7 @@ class TestGroupEdgeCases:
         page.wait_for_selector("#create-group-btn", timeout=10000)
 
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         # Try to submit with empty name
@@ -430,17 +435,15 @@ class TestGroupEdgeCases:
         page.wait_for_selector("#create-group-btn", timeout=10000)
 
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         group_name = f"No Desc Group {int(page.evaluate('Date.now()'))}"
-
-        # Fill only name
         page.fill("#group-name", group_name)
         page.fill("#group-description", "")  # Explicitly empty
 
         page.locator("#create-group-form button[type='submit']").click()
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(1000)
 
         # Verify group created
         expect(page.locator("body")).to_contain_text(group_name)
