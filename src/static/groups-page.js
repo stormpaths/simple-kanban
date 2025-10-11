@@ -643,10 +643,8 @@ class GroupsPage {
             if (/^\d+$/.test(emailOrId)) {
                 userId = parseInt(emailOrId);
             } else {
-                // It's an email, we need to search for the user
-                // Since we don't have a search endpoint, we'll try to add directly
-                // and let the backend handle the error
-                const searchResponse = await fetch(`/api/users/search?email=${encodeURIComponent(emailOrId)}`, {
+                // It's an email, search for the user
+                const searchResponse = await fetch(`/api/auth/users/search?email=${encodeURIComponent(emailOrId)}`, {
                     headers: this.getAuthHeaders()
                 });
 
@@ -657,8 +655,8 @@ class GroupsPage {
                     }
                     userId = users[0].id;
                 } else {
-                    // If search endpoint doesn't exist, show helpful error
-                    throw new Error('Please enter a user ID (email search not yet available)');
+                    const error = await searchResponse.json();
+                    throw new Error(error.detail || 'Failed to search for user');
                 }
             }
 

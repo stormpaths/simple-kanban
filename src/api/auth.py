@@ -283,3 +283,48 @@ async def deactivate_user(
     await db.refresh(user)
 
     return user
+
+
+@router.get("/users/search")
+async def search_users(
+    email: str = None,
+    username: str = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+    Search for users by email or username.
+    
+    Returns a list of matching users (limited to 10 results).
+    Only returns basic user info (id, username, email, full_name).
+    """
+    if not email and not username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide either email or username to search"
+        )
+    
+    # Build query
+    query = select(User).where(User.is_active == True)
+    
+    if email:
+        query = query.where(User.email.ilike(f"%{email}%"))
+    elif username:
+        query = query.where(User.username.ilike(f"%{username}%"))
+    
+    # Limit results
+    query = query.limit(10)
+    
+    result = await db.execute(query)
+    users = result.scalars().all()
+    
+    # Return basic user info only
+    return [
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "full_name": user.full_name,
+        }
+        for user in users
+    ]
