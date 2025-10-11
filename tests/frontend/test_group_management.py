@@ -334,32 +334,36 @@ class TestGroupMemberManagement:
         group_card.click()
         page.wait_for_timeout(1000)
 
-        # Find add member button
-        add_member_btn = page.locator(
-            "button:has-text('Add Member'), #add-member-btn"
+        # Find invite member button
+        invite_member_btn = page.locator(
+            "#invite-member-btn, button:has-text('Invite Member')"
         ).first
 
-        if add_member_btn.count() > 0 and add_member_btn.is_visible():
-            add_member_btn.click()
+        if invite_member_btn.count() > 0 and invite_member_btn.is_visible():
+            invite_member_btn.click()
             page.wait_for_timeout(500)
 
-            # Fill member email/username
-            member_input = page.locator(
-                "#member-email, #member-username, input[placeholder*='email'], input[placeholder*='username']"
-            ).first
+            # Wait for modal to appear
+            page.wait_for_selector("#invite-member-modal", state="visible", timeout=2000)
+
+            # Fill member email
+            member_input = page.locator("#invite-email").first
             if member_input.count() > 0:
                 member_input.fill("test@example.com")
 
+                # Select role
+                role_select = page.locator("#invite-role").first
+                if role_select.count() > 0:
+                    role_select.select_option("member")
+
                 # Submit
-                submit_btn = page.locator(
-                    "button:has-text('Add'), button[type='submit']"
-                ).first
+                submit_btn = page.locator("#invite-member-form button[type='submit']").first
                 submit_btn.click()
                 page.wait_for_timeout(1000)
 
-                print("✅ Member add functionality tested")
+                print("✅ Member invite functionality tested")
         else:
-            pytest.skip("Add member functionality not available in UI")
+            pytest.skip("Invite member functionality not available in UI")
 
     def test_group_member_list(self, authenticated_page: Page, base_url: str):
         """Test viewing group members."""

@@ -164,8 +164,8 @@ class TestColumnManagement:
         # Ensure board is loaded
         page.wait_for_selector(".kanban-board", timeout=5000)
 
-        # Find add column button
-        add_column_btn = page.locator("#add-column-btn, button:has-text('Add Column')")
+        # Find add column button (use first to avoid ambiguity)
+        add_column_btn = page.locator("#add-column-btn").first
 
         if add_column_btn.count() == 0:
             pytest.skip("Add column button not found")
