@@ -108,7 +108,7 @@ class TestGroupManagement:
         page.fill("#group-name", initial_name)
         page.locator("#create-group-form button[type='submit']").click()
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)  # Wait for group to be created and list to refresh
 
         # Now edit the group 3 times
         for iteration in range(3):
@@ -119,7 +119,7 @@ class TestGroupManagement:
             group_card.click()
 
             # Give JavaScript time to load details
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(1000)
 
             # Wait for group details to load - check for the title element
             page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
@@ -259,7 +259,7 @@ class TestGroupManagement:
         page.fill("#group-name", group_name)
         page.locator("#create-group-form button[type='submit']").click()
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)  # Wait for group to be created and list to refresh
 
         # Verify group exists
         expect(page.locator("body")).to_contain_text(group_name)
@@ -269,7 +269,7 @@ class TestGroupManagement:
         group_card.click()
         
         # Give JavaScript time to load details
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(1000)
         
         # Wait for group details to load - check for the title element
         page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
