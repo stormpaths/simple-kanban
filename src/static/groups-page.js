@@ -134,9 +134,14 @@ class GroupsPage {
         });
 
         // Invite member button
-        document.getElementById('invite-member-btn').addEventListener('click', () => {
-            this.showInviteMemberModal();
-        });
+        const inviteBtn = document.getElementById('invite-member-btn');
+        if (inviteBtn) {
+            inviteBtn.addEventListener('click', () => {
+                this.showInviteMemberModal();
+            });
+        } else {
+            console.warn('Invite member button not found during initial binding');
+        }
 
         // Invite member modal controls
         document.getElementById('invite-member-close').addEventListener('click', () => {
@@ -577,6 +582,9 @@ class GroupsPage {
     // Member Management Methods
 
     showInviteMemberModal() {
+        console.log('showInviteMemberModal called');
+        console.log('currentGroup:', this.currentGroup);
+        
         if (!this.currentGroup) {
             this.showError('No group selected');
             return;
@@ -584,6 +592,8 @@ class GroupsPage {
 
         // Check if user has permission (admin or owner)
         const userRole = this.currentGroup.user_role;
+        console.log('User role:', userRole);
+        
         if (userRole !== 'admin' && userRole !== 'owner') {
             this.showError('Only admins and owners can invite members');
             return;
@@ -591,6 +601,9 @@ class GroupsPage {
 
         const modal = document.getElementById('invite-member-modal');
         const form = document.getElementById('invite-member-form');
+        
+        console.log('Modal element:', modal);
+        console.log('Form element:', form);
         
         // Reset form
         form.reset();
