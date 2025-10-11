@@ -311,8 +311,9 @@ class TestGroupManagement:
         # Wait for groups list to be visible again (we should be back on the list)
         page.wait_for_selector("#create-group-btn", state="visible", timeout=5000)
 
-        # Verify group is deleted - should not appear in the groups list
-        expect(page.locator(".group-card")).not_to_contain_text(group_name)
+        # Verify group is deleted - the specific group card should not exist
+        deleted_group_card = page.locator(f".group-card:has-text('{group_name}')")
+        expect(deleted_group_card).to_have_count(0)
 
         print(f"✅ Group deleted: {group_name}")
 
