@@ -480,9 +480,10 @@ class GroupsPage {
             this.showSuccess(`Group "${updatedGroup.name}" updated successfully!`);
             this.hideEditGroupModal();
             
-            // Refresh groups and show updated details
+            // Update current group and refresh display
+            this.currentGroup = updatedGroup;
             await this.loadGroups();
-            this.showGroupDetails(updatedGroup.id);
+            this.showGroupDetails();
         } catch (error) {
             console.error('Error updating group:', error);
             this.showError(error.message);
