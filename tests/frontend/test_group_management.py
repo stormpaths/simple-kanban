@@ -114,14 +114,16 @@ class TestGroupManagement:
         for iteration in range(3):
             print(f"\n=== Group Edit Iteration {iteration + 1} ===")
 
-            # Find and click the group card to view it
+            # Find the group card
             group_card = page.locator(f".group-card:has-text('{initial_name}')").first
             
             # Verify card exists and is visible
             expect(group_card).to_be_visible(timeout=5000)
             print(f"  Group card found: {initial_name}")
             
-            group_card.click()
+            # Click the "View Details" button inside the card
+            view_button = group_card.locator("button:has-text('View Details')")
+            view_button.click()
 
             # Give JavaScript time to load details
             page.wait_for_timeout(1000)
@@ -271,7 +273,10 @@ class TestGroupManagement:
 
         # Click on the group to open details
         group_card = page.locator(f".group-card:has-text('{group_name}')").first
-        group_card.click()
+        
+        # Click the "View Details" button inside the card
+        view_button = group_card.locator("button:has-text('View Details')")
+        view_button.click()
         
         # Give JavaScript time to load details
         page.wait_for_timeout(1000)
