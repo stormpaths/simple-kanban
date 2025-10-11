@@ -155,10 +155,8 @@ class TestGroupManagement:
             name_input.fill(new_name)
             desc_input.fill(new_desc)
 
-            # Save changes
-            save_btn = page.locator(
-                "button:has-text('Save'), button[type='submit']"
-            ).first
+            # Save changes - find submit button within the edit modal
+            save_btn = page.locator("#edit-group-form button[type='submit']")
             expect(save_btn).to_be_visible()
             expect(save_btn).to_be_enabled()
             save_btn.click()
