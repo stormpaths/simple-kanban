@@ -133,12 +133,38 @@ class GroupsPage {
             this.confirmDeleteGroup();
         });
 
+        // Invite member button
+        document.getElementById('invite-member-btn').addEventListener('click', () => {
+            this.showInviteMemberModal();
+        });
+
+        // Invite member modal controls
+        document.getElementById('invite-member-close').addEventListener('click', () => {
+            this.hideInviteMemberModal();
+        });
+
+        document.getElementById('cancel-invite-member').addEventListener('click', () => {
+            this.hideInviteMemberModal();
+        });
+
+        // Invite member form submission
+        document.getElementById('invite-member-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.inviteMember();
+        });
+
         // User menu is handled by auth.js - no duplicate handlers needed
 
-        // Close modal when clicking outside
+        // Close modals when clicking outside
         document.getElementById('create-group-modal').addEventListener('click', (e) => {
             if (e.target.id === 'create-group-modal') {
                 this.hideCreateGroupModal();
+            }
+        });
+
+        document.getElementById('invite-member-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'invite-member-modal') {
+                this.hideInviteMemberModal();
             }
         });
     }
@@ -275,20 +301,36 @@ class GroupsPage {
     renderMembers(members) {
         const container = document.getElementById('members-list');
         
-        container.innerHTML = members.map(member => `
-            <div class="member-card">
-                <div class="member-avatar">
-                    <i class="fas fa-user"></i>
+        // Check if current user can manage members
+        const userRole = this.currentGroup?.user_role;
+        const canManage = userRole === 'admin' || userRole === 'owner';
+        
+        container.innerHTML = members.map(member => {
+            // Don't allow removing owners
+            const canRemove = canManage && member.role !== 'owner';
+            
+            return `
+                <div class="member-card">
+                    <div class="member-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="member-info">
+                        <div class="member-name">${this.escapeHtml(member.user.full_name || member.user.username)}</div>
+                        <div class="member-email">${this.escapeHtml(member.user.email)}</div>
+                        <div class="member-id">ID: ${member.user.id}</div>
+                    </div>
+                    <div class="member-actions">
+                        <span class="role-badge role-${member.role}">${member.role}</span>
+                        ${canRemove ? `
+                            <button class="btn btn-sm btn-danger" onclick="groupsPage.removeMember(${member.user.id}, '${this.escapeHtml(member.user.username)}')">
+                                <i class="fas fa-user-minus"></i>
+                                Remove
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
-                <div class="member-info">
-                    <div class="member-name">${this.escapeHtml(member.user.full_name || member.user.username)}</div>
-                    <div class="member-email">${this.escapeHtml(member.user.email)}</div>
-                </div>
-                <div class="member-role">
-                    <span class="role-badge role-${member.role}">${member.role}</span>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     async loadGroupBoards(groupId) {
@@ -528,6 +570,143 @@ class GroupsPage {
             this.showGroupsList();
         } catch (error) {
             console.error('Error deleting group:', error);
+            this.showError(error.message);
+        }
+    }
+
+    // Member Management Methods
+
+    showInviteMemberModal() {
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        // Check if user has permission (admin or owner)
+        const userRole = this.currentGroup.user_role;
+        if (userRole !== 'admin' && userRole !== 'owner') {
+            this.showError('Only admins and owners can invite members');
+            return;
+        }
+
+        const modal = document.getElementById('invite-member-modal');
+        const form = document.getElementById('invite-member-form');
+        
+        // Reset form
+        form.reset();
+        
+        // Show modal
+        modal.style.display = 'block';
+        
+        // Focus on email input
+        setTimeout(() => {
+            document.getElementById('member-email').focus();
+        }, 100);
+    }
+
+    hideInviteMemberModal() {
+        const modal = document.getElementById('invite-member-modal');
+        modal.style.display = 'none';
+    }
+
+    async inviteMember() {
+        if (!this.currentGroup) return;
+
+        const emailOrId = document.getElementById('member-email').value.trim();
+        const role = document.getElementById('member-role').value;
+
+        if (!emailOrId) {
+            this.showError('Please enter a user email or ID');
+            return;
+        }
+
+        try {
+            // First, try to find the user by email or ID
+            let userId;
+            
+            // Check if input is a number (user ID)
+            if (/^\d+$/.test(emailOrId)) {
+                userId = parseInt(emailOrId);
+            } else {
+                // It's an email, we need to search for the user
+                // Since we don't have a search endpoint, we'll try to add directly
+                // and let the backend handle the error
+                const searchResponse = await fetch(`/api/users/search?email=${encodeURIComponent(emailOrId)}`, {
+                    headers: this.getAuthHeaders()
+                });
+
+                if (searchResponse.ok) {
+                    const users = await searchResponse.json();
+                    if (users.length === 0) {
+                        throw new Error('User not found with that email');
+                    }
+                    userId = users[0].id;
+                } else {
+                    // If search endpoint doesn't exist, show helpful error
+                    throw new Error('Please enter a user ID (email search not yet available)');
+                }
+            }
+
+            // Add member to group
+            const response = await fetch(`/api/groups/${this.currentGroup.id}/members`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    user_id: userId,
+                    role: role
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to invite member');
+            }
+
+            const result = await response.json();
+            
+            this.showSuccess(`Member invited successfully!`);
+            this.hideInviteMemberModal();
+            
+            // Refresh group details to show new member
+            await this.viewGroup(this.currentGroup.id);
+        } catch (error) {
+            console.error('Error inviting member:', error);
+            this.showError(error.message);
+        }
+    }
+
+    async removeMember(userId, username) {
+        if (!this.currentGroup) return;
+
+        // Check if user has permission
+        const userRole = this.currentGroup.user_role;
+        if (userRole !== 'admin' && userRole !== 'owner') {
+            this.showError('Only admins and owners can remove members');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to remove ${username} from this group?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/groups/${this.currentGroup.id}/members/${userId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to remove member');
+            }
+
+            this.showSuccess(`${username} removed from group`);
+            
+            // Refresh group details
+            await this.viewGroup(this.currentGroup.id);
+        } catch (error) {
+            console.error('Error removing member:', error);
             this.showError(error.message);
         }
     }
