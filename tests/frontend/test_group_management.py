@@ -105,25 +105,26 @@ class TestGroupManagement:
             group_card = page.locator(f".group-card:has-text('{initial_name}')").first
             group_card.click()
 
-            # Wait for group details to load and edit button to appear
+            # Wait for group details section to appear
+            page.wait_for_selector("#group-details-section", state="visible", timeout=5000)
+            
+            # Wait for edit button to appear
             page.wait_for_selector("#edit-group-btn", state="visible", timeout=5000)
 
             # Click edit button in the group details view
             edit_btn = page.locator("#edit-group-btn")
             edit_btn.click()
 
-            # Wait for edit modal/form
-            page.wait_for_timeout(1000)
+            # Wait for edit modal to appear
+            page.wait_for_selector("#edit-group-modal", state="visible", timeout=5000)
 
             # Update both fields
             new_name = f"{initial_name} - Edit {iteration + 1}"
             new_desc = f"Updated description - iteration {iteration + 1}"
 
-            # Find name and description inputs (might be in modal or inline)
-            name_input = page.locator("#group-name, input[name='name']").first
-            desc_input = page.locator(
-                "#group-description, textarea[name='description']"
-            ).first
+            # Use the edit modal's specific input fields
+            name_input = page.locator("#edit-group-name")
+            desc_input = page.locator("#edit-group-description")
 
             name_input.fill(new_name)
             desc_input.fill(new_desc)
@@ -136,14 +137,17 @@ class TestGroupManagement:
             expect(save_btn).to_be_enabled()
             save_btn.click()
 
-            # Wait for save to complete
-            page.wait_for_timeout(2000)
+            # Wait for modal to close
+            page.wait_for_selector("#edit-group-modal", state="hidden", timeout=5000)
+            
+            # Wait for update to complete
+            page.wait_for_timeout(1000)
 
-            # Verify group name updated
-            expect(page.locator("body")).to_contain_text(new_name)
+            # Verify group name updated in the details view
+            expect(page.locator("#group-details-title")).to_contain_text(new_name)
 
             # Update current name for next iteration
-            current_name = new_name
+            initial_name = new_name
 
             print(f"  ✅ Edit {iteration + 1} successful: {new_name}")
 
@@ -240,32 +244,24 @@ class TestGroupManagement:
         # Verify group exists
         expect(page.locator("body")).to_contain_text(group_name)
 
-        # Find and click delete button
-        group_card = page.locator(
-            f".group-card:has-text('{group_name}'), .group-item:has-text('{group_name}')"
-        ).first
-        delete_btn = group_card.locator(
-            "button:has-text('Delete'), .delete-btn, [title*='Delete']"
-        ).first
+        # Click on the group to open details
+        group_card = page.locator(f".group-card:has-text('{group_name}')").first
+        group_card.click()
+        
+        # Wait for group details section to appear
+        page.wait_for_selector("#group-details-section", state="visible", timeout=5000)
+        
+        # Wait for delete button to appear
+        page.wait_for_selector("#delete-group-btn", state="visible", timeout=5000)
 
-        if delete_btn.count() > 0:
-            delete_btn.click()
-        else:
-            # Might need to open group details first
-            group_card.click()
-            page.wait_for_timeout(500)
-            delete_btn = page.locator("button:has-text('Delete'), .delete-btn").first
-            delete_btn.click()
+        # Set up dialog handler for the confirm() dialog
+        page.on("dialog", lambda dialog: dialog.accept())
+        
+        # Click delete button
+        delete_btn = page.locator("#delete-group-btn")
+        delete_btn.click()
 
-        # Handle confirmation dialog
-        page.wait_for_timeout(500)
-        confirm_btn = page.locator(
-            "button:has-text('Delete'), button:has-text('Confirm')"
-        ).first
-        if confirm_btn.is_visible():
-            confirm_btn.click()
-
-        # Wait for deletion
+        # Wait for deletion to complete and return to groups list
         page.wait_for_timeout(2000)
 
         # Verify group is deleted
