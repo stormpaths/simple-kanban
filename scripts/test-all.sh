@@ -428,6 +428,15 @@ else
     TEST_RESULTS+=("⏭️  Group Management & Board Sharing - Skipped (quick mode)")
 fi
 
+# Test 5: Member Management (if not in quick mode)
+if [ "$QUICK_MODE" = false ]; then
+    run_test_script "test-member-management.sh" "Member Management & User Search"
+else
+    log_skip "Member Management tests (quick mode)"
+    SKIPPED_TESTS=$((SKIPPED_TESTS + 1))
+    TEST_RESULTS+=("⏭️  Member Management & User Search - Skipped (quick mode)")
+fi
+
 # Additional smoke tests
 log_header "SMOKE TESTS"
 
