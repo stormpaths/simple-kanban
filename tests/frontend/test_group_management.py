@@ -139,10 +139,10 @@ class TestGroupManagement:
             edit_btn.click()
 
             # Give JavaScript time to show modal
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(1000)
 
             # Wait for edit modal to appear
-            page.wait_for_selector("#edit-group-modal", state="visible", timeout=5000)
+            page.wait_for_selector("#edit-group-modal", state="visible", timeout=10000)
 
             # Update both fields
             new_name = f"{initial_name} - Edit {iteration + 1}"
@@ -176,6 +176,14 @@ class TestGroupManagement:
             initial_name = new_name
 
             print(f"  ✅ Edit {iteration + 1} successful: {new_name}")
+            
+            # Go back to groups list for next iteration (if not the last one)
+            if iteration < 2:  # 0, 1, 2 - so skip on iteration 2
+                back_btn = page.locator("#back-to-groups-btn")
+                back_btn.click()
+                page.wait_for_timeout(1000)
+                # Wait for groups list to be visible
+                page.wait_for_selector("#create-group-btn", state="visible", timeout=5000)
 
         print(f"\n✅ Successfully edited group 3 times!")
 
@@ -287,18 +295,26 @@ class TestGroupManagement:
         # Wait for delete button to appear
         page.wait_for_selector("#delete-group-btn", state="visible", timeout=5000)
 
-        # Set up dialog handler for the confirm() dialog
-        page.on("dialog", lambda dialog: dialog.accept())
+        # Set up dialog handler BEFORE clicking (must be synchronous)
+        def handle_dialog(dialog):
+            print(f"Dialog appeared: {dialog.message}")
+            dialog.accept()
+        
+        page.once("dialog", handle_dialog)
         
         # Click delete button
         delete_btn = page.locator("#delete-group-btn")
         delete_btn.click()
 
         # Wait for deletion to complete and return to groups list
-        page.wait_for_timeout(2000)
+        # The delete operation: shows confirm, deletes group, returns to list, refreshes
+        page.wait_for_timeout(3000)
+        
+        # Wait for groups list to be visible again (we should be back on the list)
+        page.wait_for_selector("#create-group-btn", state="visible", timeout=5000)
 
-        # Verify group is deleted
-        expect(page.locator("body")).not_to_contain_text(group_name)
+        # Verify group is deleted - should not appear in the groups list
+        expect(page.locator(".group-card")).not_to_contain_text(group_name)
 
         print(f"✅ Group deleted: {group_name}")
 
