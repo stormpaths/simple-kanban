@@ -33,29 +33,13 @@ class TestGroupManagement:
         """Test creating a group with all fields filled."""
         page = authenticated_page
 
-        # Listen for console messages to debug
-        page.on("console", lambda msg: print(f"CONSOLE: {msg.type}: {msg.text}"))
-        page.on("pageerror", lambda err: print(f"PAGE ERROR: {err}"))
-
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
 
-        print("✅ Create button found, clicking...")
-        
         # Click create group button
         page.click("#create-group-btn")
-        
-        # Give it a moment
         page.wait_for_timeout(1000)
-        
-        # Check if modal exists in DOM
-        modal_exists = page.locator("#create-group-modal").count()
-        print(f"Modal count in DOM: {modal_exists}")
-        
-        if modal_exists > 0:
-            modal_display = page.locator("#create-group-modal").evaluate("el => window.getComputedStyle(el).display")
-            print(f"Modal display style: {modal_display}")
 
         # Wait for modal
         page.wait_for_selector("#create-group-modal", state="visible")
