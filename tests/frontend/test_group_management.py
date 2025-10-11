@@ -105,8 +105,8 @@ class TestGroupManagement:
             group_card = page.locator(f".group-card:has-text('{initial_name}')").first
             group_card.click()
 
-            # Wait for group details section to appear
-            page.wait_for_selector("#group-details-section", state="visible", timeout=5000)
+            # Wait for group details to load - check for the title element
+            page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
             
             # Wait for edit button to appear
             page.wait_for_selector("#edit-group-btn", state="visible", timeout=5000)
@@ -248,8 +248,8 @@ class TestGroupManagement:
         group_card = page.locator(f".group-card:has-text('{group_name}')").first
         group_card.click()
         
-        # Wait for group details section to appear
-        page.wait_for_selector("#group-details-section", state="visible", timeout=5000)
+        # Wait for group details to load - check for the title element
+        page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
         
         # Wait for delete button to appear
         page.wait_for_selector("#delete-group-btn", state="visible", timeout=5000)
