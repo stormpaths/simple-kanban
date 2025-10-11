@@ -19,7 +19,7 @@ from ..schemas import (
     TokenResponse,
     MessageResponse,
 )
-from ..auth.dependencies import get_current_user, get_current_admin_user
+from ..auth.dependencies import get_current_user, get_current_admin_user, get_user_from_api_key_or_jwt
 from ..utils.error_handler import (
     handle_auth_error,
     handle_validation_error,
@@ -289,7 +289,7 @@ async def deactivate_user(
 async def search_users(
     email: str = None,
     username: str = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
     db: AsyncSession = Depends(get_db_session),
 ):
     """
