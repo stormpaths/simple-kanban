@@ -41,9 +41,34 @@ class TestBoardManagement:
 
         # Get current board options
         board_options = page.locator("#board-select option")
+        initial_board_count = board_options.count()
 
+        # Create 2 boards if we don't have enough
+        if initial_board_count < 2:
+            # Create first board
+            page.click("#create-board-btn, button:has-text('Create Board')")
+            page.wait_for_timeout(500)
+            page.wait_for_selector("#create-board-modal, #board-modal", state="visible")
+            
+            board1_name = f"Test Board 1 {int(page.evaluate('Date.now()'))}"
+            page.fill("#board-name", board1_name)
+            page.locator("#create-board-form button[type='submit'], #board-form button[type='submit']").first.click()
+            page.wait_for_timeout(1000)
+            
+            # Create second board
+            page.click("#create-board-btn, button:has-text('Create Board')")
+            page.wait_for_timeout(500)
+            page.wait_for_selector("#create-board-modal, #board-modal", state="visible")
+            
+            board2_name = f"Test Board 2 {int(page.evaluate('Date.now()'))}"
+            page.fill("#board-name", board2_name)
+            page.locator("#create-board-form button[type='submit'], #board-form button[type='submit']").first.click()
+            page.wait_for_timeout(1000)
+
+        # Now we should have at least 2 boards
+        board_options = page.locator("#board-select option")
         if board_options.count() < 2:
-            pytest.skip("Need at least 2 boards to test switching")
+            pytest.skip("Could not create enough boards for testing")
 
         # Select first board
         page.select_option("#board-select", index=0)
@@ -51,6 +76,7 @@ class TestBoardManagement:
 
         # Verify board loaded (columns should be visible)
         page.wait_for_selector(".kanban-board", timeout=5000)
+        first_board_name = page.locator("#board-select").input_value()
 
         # Select second board
         page.select_option("#board-select", index=1)
@@ -58,6 +84,10 @@ class TestBoardManagement:
 
         # Verify board switched (should reload columns)
         page.wait_for_selector(".kanban-board", timeout=5000)
+        second_board_name = page.locator("#board-select").input_value()
+        
+        # Verify we actually switched boards
+        assert first_board_name != second_board_name, "Board did not switch"
 
     def test_edit_board(self, authenticated_page: Page):
         """Test editing board details."""

@@ -327,17 +327,18 @@ class TestGroupMemberManagement:
         page.wait_for_selector("#create-group-modal", state="hidden")
         page.wait_for_timeout(1000)
 
-        # Open group details
+        # Open group details by clicking on the group card
         group_card = page.locator(
             f".group-card:has-text('{group_name}'), .group-item:has-text('{group_name}')"
         ).first
         group_card.click()
-        page.wait_for_timeout(1000)
+        
+        # Wait for group details modal to open
+        page.wait_for_selector("#group-details-modal", state="visible", timeout=5000)
+        page.wait_for_timeout(500)
 
-        # Find invite member button
-        invite_member_btn = page.locator(
-            "#invite-member-btn, button:has-text('Invite Member')"
-        ).first
+        # Find invite member button in the group details modal
+        invite_member_btn = page.locator("#invite-member-btn").first
 
         if invite_member_btn.count() > 0 and invite_member_btn.is_visible():
             invite_member_btn.click()
