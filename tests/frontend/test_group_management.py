@@ -327,11 +327,11 @@ class TestGroupMemberManagement:
         page.wait_for_selector("#create-group-modal", state="hidden")
         page.wait_for_timeout(1000)
 
-        # Open group details by clicking on the group card
-        group_card = page.locator(
-            f".group-card:has-text('{group_name}'), .group-item:has-text('{group_name}')"
+        # Open group details by clicking the "View Details" button
+        view_details_btn = page.locator(
+            f".group-card:has-text('{group_name}') button:has-text('View Details')"
         ).first
-        group_card.click()
+        view_details_btn.click()
         
         # Wait for group details section to become visible and invite button to appear
         page.wait_for_selector("#group-details-section", state="visible", timeout=5000)
