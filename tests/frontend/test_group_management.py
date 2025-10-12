@@ -333,11 +333,11 @@ class TestGroupMemberManagement:
         ).first
         group_card.click()
         
-        # Wait for group details modal to open
-        page.wait_for_selector("#group-details-modal", state="visible", timeout=5000)
+        # Wait for group details section to become visible
+        page.wait_for_selector("#group-details-section[style*='display: block'], #group-details-section:not([style*='display: none'])", timeout=5000)
         page.wait_for_timeout(500)
 
-        # Find invite member button in the group details modal
+        # Find invite member button in the group details section
         invite_member_btn = page.locator("#invite-member-btn").first
 
         if invite_member_btn.count() > 0 and invite_member_btn.is_visible():

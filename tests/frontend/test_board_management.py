@@ -46,23 +46,25 @@ class TestBoardManagement:
         # Create 2 boards if we don't have enough
         if initial_board_count < 2:
             # Create first board
-            page.click("#create-board-btn, button:has-text('Create Board')")
+            page.click("#new-board-btn")
             page.wait_for_timeout(500)
-            page.wait_for_selector("#create-board-modal, #board-modal", state="visible")
+            page.wait_for_selector("#board-modal", state="visible")
             
             board1_name = f"Test Board 1 {int(page.evaluate('Date.now()'))}"
             page.fill("#board-name", board1_name)
-            page.locator("#create-board-form button[type='submit'], #board-form button[type='submit']").first.click()
+            page.locator("#board-form button[type='submit']").first.click()
+            page.wait_for_selector("#board-modal", state="hidden", timeout=5000)
             page.wait_for_timeout(1000)
             
             # Create second board
-            page.click("#create-board-btn, button:has-text('Create Board')")
+            page.click("#new-board-btn")
             page.wait_for_timeout(500)
-            page.wait_for_selector("#create-board-modal, #board-modal", state="visible")
+            page.wait_for_selector("#board-modal", state="visible")
             
             board2_name = f"Test Board 2 {int(page.evaluate('Date.now()'))}"
             page.fill("#board-name", board2_name)
-            page.locator("#create-board-form button[type='submit'], #board-form button[type='submit']").first.click()
+            page.locator("#board-form button[type='submit']").first.click()
+            page.wait_for_selector("#board-modal", state="hidden", timeout=5000)
             page.wait_for_timeout(1000)
 
         # Now we should have at least 2 boards
