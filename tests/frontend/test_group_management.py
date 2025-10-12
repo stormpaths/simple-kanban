@@ -216,14 +216,18 @@ class TestGroupManagement:
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
 
+        # Use unique name to avoid conflicts with other tests
+        unique_name = f"CANCEL_TEST_{int(page.evaluate('Date.now()'))}"
+        unique_desc = f"CANCEL_DESC_{int(page.evaluate('Date.now()'))}"
+
         # Open create modal
         page.click("#create-group-btn")
         page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
-        # Fill form
-        page.fill("#group-name", "This should not be saved")
-        page.fill("#group-description", "This description should not be saved")
+        # Fill form with unique identifiers
+        page.fill("#group-name", unique_name)
+        page.fill("#group-description", unique_desc)
 
         # Click cancel
         cancel_btn = page.locator(
@@ -234,12 +238,12 @@ class TestGroupManagement:
 
         # Wait for modal to close
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(2000)  # Increased wait time for test isolation
 
-        # Verify group was not created
-        expect(page.locator("body")).not_to_contain_text("This should not be saved")
+        # Verify group was not created (check for unique name)
+        expect(page.locator("body")).not_to_contain_text(unique_name)
 
-        print("✅ Cancel button works - group not created")
+        print(f"✅ Cancel button works - group '{unique_name}' not created")
 
     def test_delete_group(self, authenticated_page: Page, base_url: str):
         """Test deleting a group."""

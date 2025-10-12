@@ -293,12 +293,35 @@ generate_report() {
     echo -e "  ${YELLOW}Skipped: $SKIPPED_TESTS${NC}"
     echo -e "  ${WHITE}Total: $TOTAL_TESTS${NC}"
     
-    if [ $FAILED_TESTS -eq 0 ]; then
+    # Check for frontend failures too
+    local frontend_failed=0
+    if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+        frontend_failed=$(jq -r '.summary.failed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+    fi
+    
+    local total_failed=$((FAILED_TESTS + frontend_failed))
+    
+    if [ $total_failed -eq 0 ]; then
         echo -e "\n${GREEN}🎉 ALL TESTS PASSED! 🎉${NC}"
         echo -e "${GREEN}✅ Deployment validation successful${NC}"
     else
         echo -e "\n${RED}💥 SOME TESTS FAILED 💥${NC}"
         echo -e "${RED}❌ Deployment validation failed${NC}"
+        
+        # Show which tests failed
+        echo -e "\n${RED}Failed Tests:${NC}"
+        for result in "${TEST_RESULTS[@]}"; do
+            if [[ "$result" == *"❌"* ]]; then
+                echo -e "  $result"
+            fi
+        done
+        
+        # Show frontend failures
+        if [ $frontend_failed -gt 0 ] && [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+            jq -r '.results[] | select(startswith("❌"))' "$PROJECT_ROOT/frontend-test-results.json" 2>/dev/null | while read -r line; do
+                echo -e "  $line"
+            done
+        fi
     fi
     
     echo -e "\n${WHITE}Detailed Results:${NC}"
@@ -345,7 +368,7 @@ $(printf ',\n      "%s"' "${TEST_RESULTS[@]:1}")
   },
   "frontend": $frontend_section,
   "overall": {
-    "success": $([ $FAILED_TESTS -eq 0 ] && echo "true" || echo "false")
+    "success": $(if [ $FAILED_TESTS -eq 0 ]; then echo "$frontend_section" | jq -r '.success // true'; else echo "false"; fi)
   }
 }
 EOF
@@ -372,8 +395,15 @@ EOF
     
     log_info "Machine-readable report saved to: $report_file"
     
-    # Exit with appropriate code
-    if [ $FAILED_TESTS -eq 0 ]; then
+    # Exit with appropriate code (check both backend and frontend)
+    local frontend_failed=0
+    if [ -f "$PROJECT_ROOT/frontend-test-results.json" ]; then
+        frontend_failed=$(jq -r '.summary.failed // 0' "$PROJECT_ROOT/frontend-test-results.json")
+    fi
+    
+    local total_failed=$((FAILED_TESTS + frontend_failed))
+    
+    if [ $total_failed -eq 0 ]; then
         exit 0
     else
         exit 1
