@@ -23,16 +23,24 @@ A complete Prometheus and Grafana monitoring stack for local development and low
 
 ## Quick Start
 
-### 1. Start the Monitoring Stack
+### 1. Start the Application
 ```bash
-# Start application with monitoring
-docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+# Start local development with Skaffold
+make dev
 
-# Or start monitoring stack separately
+# Application will be available at http://localhost:8000
+```
+
+### 2. Start the Monitoring Stack (Optional)
+```bash
+# Start standalone monitoring stack
+make monitoring-up
+
+# Or use docker-compose directly
 docker-compose -f docker-compose.monitoring.yml up -d
 ```
 
-### 2. Access Services
+### 3. Access Services
 - **Grafana**: http://localhost:3000 (admin/admin123)
 - **Prometheus**: http://localhost:9090
 - **AlertManager**: http://localhost:9093

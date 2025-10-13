@@ -1,3 +1,9 @@
+# Architecture Options Analysis
+
+> **Note:** This is a historical planning document from the initial project phase.
+> The project now uses Skaffold + Kubernetes + Helm for all deployments.
+> See README.md for current deployment approach.
+
 # Architecture Design Options - Simple Kanban Board
 
 Based on your stormpath app's Redis/PostgreSQL pattern and data persistence requirements, here are three architecture options:

@@ -111,34 +111,49 @@ This project provides a containerized kanban board that you fully own and contro
 
 ### Deployment Stack
 - **Containerization**: Docker with multi-stage builds
+- **Orchestration**: Kubernetes with Helm charts
+- **Development**: Skaffold for local and cluster development
+- **Monitoring**: Prometheus + Grafana (optional)
 
-### Automated Test Environment Setup
+## 🚀 Quick Start
 
-**🚀 NEW: Self-Bootstrapping Tests**
-No manual setup required! The test suite can create its own test environment:
-
+### Local Development (Recommended)
 ```bash
-# Automatic bootstrap + full test suite
-./scripts/test-with-bootstrap.sh
+# Start local development with Skaffold
+make dev
+
+# Application available at: http://localhost:8000
+# - Auto-rebuild on code changes
+# - Port-forward to localhost (no ingress needed)
+# - Lighter resource limits for laptop development
+```
+
+### Development Cluster
+```bash
+# Deploy to dev cluster with ingress
+make dev-cluster
+
+# Application available at: https://kanban.stormpath.dev
+# - Full cluster resources
+# - Automated testing after deploy
+```
+
+### Production Deployment
+```bash
+# Deploy to production
+make deploy
+
+# Application available at: https://kanban.stormpath.net
+```
+
+### Optional: Monitoring Stack
+```bash
+# Start standalone monitoring (Prometheus + Grafana)
 make monitoring-up
 
 # Access monitoring services
 # Grafana: http://localhost:3000 (admin/admin123)
 # Prometheus: http://localhost:9090
-# Application metrics: http://localhost:8000/metrics
-```
-
-### Production Deployment
-```bash
-# Build and deploy with Helm
-make build
-make deploy
-```
-
-### Docker Run
-```bash
-# Simple single-container deployment
-docker run -p 8000:8000 -v kanban-data:/app/data simple-kanban:latest
 ```
 
 ## Project Structure

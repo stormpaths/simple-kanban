@@ -76,8 +76,8 @@ simple-kanban/
 ├── alembic.ini                   # Database migration config
 ├── pyproject.toml                # Python dependencies & config
 ├── Dockerfile                    # Container build
-├── docker-compose.yml            # Local development
-├── skaffold.yaml                 # Development workflow
+├── skaffold.yaml                 # Development workflow (primary)
+├── docker-compose.monitoring.yml # Optional monitoring stack
 ├── Makefile                      # Build automation
 ├── .gitignore
 ├── .dockerignore

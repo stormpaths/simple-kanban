@@ -1,5 +1,5 @@
 # Development targets
-.PHONY: help dev test test-all test-quick test-backend test-frontend test-frontend-json test-production lint format clean setup install dev-monitoring monitoring-up monitoring-down build run
+.PHONY: help dev dev-cluster test test-all test-quick test-backend test-frontend test-frontend-json test-production lint format clean setup install monitoring-up monitoring-down build run
 
 # Variables
 PROJECT_NAME ?= $(shell basename $(CURDIR))
@@ -35,15 +35,14 @@ help:
 	@echo ""
 	@echo "🔧 Development:"
 	@echo "  make setup             - Setup development environment"
-	@echo "  make run               - Run application locally"
-	@echo "  make dev               - Deploy for development (Skaffold)"
+	@echo "  make dev               - Start local development (Skaffold + port-forward)"
+	@echo "  make dev-cluster       - Deploy to dev cluster (with ingress)"
 	@echo "  make build             - Build Docker image"
-	@echo "  make deploy            - Deploy using Helm"
+	@echo "  make deploy            - Deploy to production using Helm"
 	@echo ""
 	@echo "📊 Monitoring:"
-	@echo "  make monitoring-up     - Start monitoring stack"
+	@echo "  make monitoring-up     - Start monitoring stack (docker-compose)"
 	@echo "  make monitoring-down   - Stop monitoring stack"
-	@echo "  make dev-monitoring    - Start app with monitoring"
 	@echo ""
 	@echo "🔍 Code Quality:"
 	@echo "  make lint              - Run code quality checks"
@@ -64,6 +63,41 @@ setup:
 	python -m venv venv
 	. venv/bin/activate && pip install -r requirements.txt
 	pre-commit install || echo "pre-commit not available"
+
+# ============================================================================
+# Development Targets
+# ============================================================================
+
+# Local development with Skaffold (default for 'skaffold dev')
+dev:
+	@echo "🚀 Starting local development with Skaffold..."
+	@echo ""
+	@echo "📍 Application will be available at:"
+	@echo "   http://localhost:8000"
+	@echo ""
+	@echo "⚡ Features:"
+	@echo "   - Auto-rebuild on code changes"
+	@echo "   - Port-forward to localhost:8000"
+	@echo "   - No ingress required"
+	@echo "   - Lighter resource limits"
+	@echo ""
+	@echo "Press Ctrl+C to stop"
+	@echo ""
+	skaffold dev -p local
+
+# Deploy to dev cluster (with ingress)
+dev-cluster:
+	@echo "🚀 Deploying to dev cluster with Skaffold..."
+	@echo ""
+	@echo "📍 Application will be available at:"
+	@echo "   https://kanban.stormpath.dev"
+	@echo ""
+	@echo "⚡ Features:"
+	@echo "   - Ingress enabled"
+	@echo "   - Automated testing after deploy"
+	@echo "   - Full cluster resources"
+	@echo ""
+	skaffold run -p dev
 
 # Secrets management with SOPS
 secrets:
