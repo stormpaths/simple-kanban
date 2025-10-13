@@ -127,13 +127,29 @@ test-backend:
 	@echo ""
 	./scripts/test-auth-comprehensive.sh
 
-# Run frontend E2E tests
+# Run frontend E2E tests (serial execution)
 test-frontend:
 	@echo "🧪 Running frontend E2E tests..."
 	@echo ""
 	@echo "📊 Frontend Coverage: 92% (47/51 tests)"
 	@echo ""
 	cd tests/frontend && docker-compose run --rm frontend-tests pytest -v
+
+# Run frontend tests in parallel (4 workers)
+test-frontend-parallel:
+	@echo "🧪 Running frontend E2E tests in parallel (4 workers)..."
+	@echo ""
+	@echo "⚡ Parallel execution for faster results"
+	@echo ""
+	cd tests/frontend && docker-compose run --rm frontend-tests pytest -n 4 --dist loadgroup -v
+
+# Run frontend tests in parallel (auto workers)
+test-frontend-parallel-auto:
+	@echo "🧪 Running frontend E2E tests in parallel (auto workers)..."
+	@echo ""
+	@echo "⚡ Using all available CPU cores"
+	@echo ""
+	cd tests/frontend && docker-compose run --rm frontend-tests pytest -n auto --dist loadgroup -v
 
 # Run frontend tests with JSON report
 test-frontend-json:

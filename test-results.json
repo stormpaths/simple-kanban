@@ -1,33 +1,42 @@
 {
-  "timestamp": "2025-10-10T13:44:57-07:00",
-  "duration": 1,
+  "timestamp": "2025-10-12T21:30:53-07:00",
+  "duration": 573,
   "mode": "full",
   "backend": {
     "summary": {
-      "total": 3,
-      "passed": 1,
-      "failed": 2,
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
       "skipped": 0
     },
-    "success": false,
+    "success": true,
     "results": [
-      "❌ Health Check - HTTP 000"
+      "✅ Health Check - Application responding"
 ,
       "✅ API Key Verification - Key accessible",
-      "❌ Comprehensive Authentication System - Failed (1s)"
+      "✅ Comprehensive Authentication System - Passed (23s)",
+      "✅ API Key Authentication & Core Endpoints - Passed (7s)",
+      "✅ Admin API & Statistics - Passed (3s)",
+      "✅ Group Management & Board Sharing - Passed (9s)",
+      "✅ Member Management & User Search - Passed (13s)",
+      "✅ Static File Serving - Main page accessible",
+      "✅ API Documentation - Accessible with auth",
+      "✅ OpenAPI Schema - Accessible",
+      "✅ Frontend Test Suite - All tests passed",
+      "  📊 Frontend: 50/51 passed"
     ]
   },
   "frontend": {
-  "timestamp": "2025-10-09T14:35:31-07:00",
-  "duration": 402,
+  "timestamp": "2025-10-12T21:22:17-07:00",
+  "duration": 516,
   "summary": {
     "total": 51,
-    "passed": 47,
-    "failed": 0,
-    "skipped": 4,
+    "passed": 50,
+    "failed": 1,
+    "skipped": 0,
     "errors": 0
   },
-  "success": true,
+  "success": false,
   "results": [
     "✅ test_api_registration.py::test_api_registration - Passed",
     "✅ test_authentication.py::TestAuthentication::test_login_with_valid_credentials[chromium] - Passed",
@@ -49,16 +58,16 @@
     "✅ test_board_management.py::TestBoardManagement::test_edit_board[chromium] - Passed",
     "✅ test_board_management.py::TestBoardManagement::test_delete_board[chromium] - Passed",
     "✅ test_board_management.py::TestBoardManagement::test_board_persistence[chromium] - Passed",
-    "⏭️  test_board_management.py::TestColumnManagement::test_create_new_column[chromium] - Skipped",
+    "✅ test_board_management.py::TestColumnManagement::test_create_new_column[chromium] - Passed",
     "✅ test_board_management.py::TestColumnManagement::test_column_order[chromium] - Passed",
     "✅ test_debug.py::test_debug_login_flow[chromium] - Passed",
     "✅ test_group_management.py::TestGroupManagement::test_navigate_to_groups_page[chromium] - Passed",
     "✅ test_group_management.py::TestGroupManagement::test_create_group_with_all_fields[chromium] - Passed",
-    "⏭️  test_group_management.py::TestGroupManagement::test_edit_group_multiple_times_all_fields[chromium] - Skipped",
+    "✅ test_group_management.py::TestGroupManagement::test_edit_group_multiple_times_all_fields[chromium] - Passed",
     "✅ test_group_management.py::TestGroupManagement::test_create_multiple_groups_sequentially[chromium] - Passed",
     "✅ test_group_management.py::TestGroupManagement::test_group_modal_cancel_button[chromium] - Passed",
-    "⏭️  test_group_management.py::TestGroupManagement::test_delete_group[chromium] - Skipped",
-    "⏭️  test_group_management.py::TestGroupMemberManagement::test_add_member_to_group[chromium] - Skipped",
+    "✅ test_group_management.py::TestGroupManagement::test_delete_group[chromium] - Passed",
+    "❌ test_group_management.py::TestGroupMemberManagement::test_add_member_to_group[chromium] - Failed",
     "✅ test_group_management.py::TestGroupMemberManagement::test_group_member_list[chromium] - Passed",
     "✅ test_group_management.py::TestGroupEdgeCases::test_group_name_validation[chromium] - Passed",
     "✅ test_group_management.py::TestGroupEdgeCases::test_group_description_optional[chromium] - Passed",
@@ -83,6 +92,6 @@
   ]
 },
   "overall": {
-    "success": false
+    "success": true
   }
 }
