@@ -178,14 +178,19 @@ class TestGroupManagement:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload for test isolation
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         group_names = []
 
         # Create 3 groups sequentially
         for i in range(3):
             page.click("#create-group-btn")
-            page.wait_for_timeout(1000)
-            page.wait_for_selector("#create-group-modal", state="visible")
+            page.wait_for_timeout(2000)
+            page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
             group_name = (
                 f"Sequential Group {i + 1} - {int(page.evaluate('Date.now()'))}"
@@ -319,11 +324,16 @@ class TestGroupMemberManagement:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload for test isolation
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         # Create a group
         page.click("#create-group-btn")
-        page.wait_for_timeout(1000)
-        page.wait_for_selector("#create-group-modal", state="visible")
+        page.wait_for_timeout(2000)
+        page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
         group_name = f"Member Test Group {int(page.evaluate('Date.now()'))}"
         page.fill("#group-name", group_name)
