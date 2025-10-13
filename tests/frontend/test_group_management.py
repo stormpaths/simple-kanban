@@ -420,10 +420,15 @@ class TestGroupEdgeCases:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload page for better test isolation after many previous tests
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         page.click("#create-group-btn")
-        page.wait_for_timeout(1000)
-        page.wait_for_selector("#create-group-modal", state="visible")
+        page.wait_for_timeout(2000)  # Increased wait for test isolation
+        page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
         # Try to submit with empty name
         page.fill("#group-name", "")
@@ -442,10 +447,15 @@ class TestGroupEdgeCases:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload page for better test isolation after many previous tests
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         page.click("#create-group-btn")
-        page.wait_for_timeout(1000)
-        page.wait_for_selector("#create-group-modal", state="visible")
+        page.wait_for_timeout(2000)  # Increased wait for test isolation
+        page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
         group_name = f"No Desc Group {int(page.evaluate('Date.now()'))}"
         page.fill("#group-name", group_name)
