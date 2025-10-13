@@ -96,10 +96,24 @@ class GroupsPage {
             this.hideCreateGroupModal();
         });
 
-        // Form submission
+        // Edit group modal controls
+        document.getElementById('edit-group-close').addEventListener('click', () => {
+            this.hideEditGroupModal();
+        });
+
+        document.getElementById('cancel-edit-group').addEventListener('click', () => {
+            this.hideEditGroupModal();
+        });
+
+        // Form submissions
         document.getElementById('create-group-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.createGroup();
+        });
+
+        document.getElementById('edit-group-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateGroup();
         });
 
         // Group details navigation
@@ -111,12 +125,51 @@ class GroupsPage {
             this.createGroupBoard();
         });
 
+        document.getElementById('edit-group-btn').addEventListener('click', () => {
+            this.showEditGroupModal();
+        });
+
+        document.getElementById('delete-group-btn').addEventListener('click', () => {
+            this.confirmDeleteGroup();
+        });
+
+        // Invite member button
+        const inviteBtn = document.getElementById('invite-member-btn');
+        if (inviteBtn) {
+            inviteBtn.addEventListener('click', () => {
+                this.showInviteMemberModal();
+            });
+        } else {
+            console.warn('Invite member button not found during initial binding');
+        }
+
+        // Invite member modal controls
+        document.getElementById('invite-member-close').addEventListener('click', () => {
+            this.hideInviteMemberModal();
+        });
+
+        document.getElementById('cancel-invite-member').addEventListener('click', () => {
+            this.hideInviteMemberModal();
+        });
+
+        // Invite member form submission
+        document.getElementById('invite-member-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.inviteMember();
+        });
+
         // User menu is handled by auth.js - no duplicate handlers needed
 
-        // Close modal when clicking outside
+        // Close modals when clicking outside
         document.getElementById('create-group-modal').addEventListener('click', (e) => {
             if (e.target.id === 'create-group-modal') {
                 this.hideCreateGroupModal();
+            }
+        });
+
+        document.getElementById('invite-member-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'invite-member-modal') {
+                this.hideInviteMemberModal();
             }
         });
     }
@@ -233,8 +286,10 @@ class GroupsPage {
         document.getElementById('member-count').textContent = group.member_count;
         document.getElementById('group-created').textContent = this.formatDate(group.created_at);
         
-        // Find user's role
+        // Find user's role and add it to currentGroup
         const userRole = this.groups.find(g => g.id === group.id)?.user_role || 'member';
+        this.currentGroup.user_role = userRole; // Store it in currentGroup for later use
+        
         const roleElement = document.getElementById('user-role');
         roleElement.textContent = userRole;
         roleElement.className = `role-badge role-${userRole}`;
@@ -253,20 +308,36 @@ class GroupsPage {
     renderMembers(members) {
         const container = document.getElementById('members-list');
         
-        container.innerHTML = members.map(member => `
-            <div class="member-card">
-                <div class="member-avatar">
-                    <i class="fas fa-user"></i>
+        // Check if current user can manage members
+        const userRole = this.currentGroup?.user_role;
+        const canManage = userRole === 'admin' || userRole === 'owner';
+        
+        container.innerHTML = members.map(member => {
+            // Don't allow removing owners
+            const canRemove = canManage && member.role !== 'owner';
+            
+            return `
+                <div class="member-card">
+                    <div class="member-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="member-info">
+                        <div class="member-name">${this.escapeHtml(member.user.full_name || member.user.username)}</div>
+                        <div class="member-email">${this.escapeHtml(member.user.email)}</div>
+                        <div class="member-id">ID: ${member.user.id}</div>
+                    </div>
+                    <div class="member-actions">
+                        <span class="role-badge role-${member.role}">${member.role}</span>
+                        ${canRemove ? `
+                            <button class="btn btn-sm btn-danger" onclick="groupsPage.removeMember(${member.user.id}, '${this.escapeHtml(member.user.username)}')">
+                                <i class="fas fa-user-minus"></i>
+                                Remove
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
-                <div class="member-info">
-                    <div class="member-name">${this.escapeHtml(member.user.full_name || member.user.username)}</div>
-                    <div class="member-email">${this.escapeHtml(member.user.email)}</div>
-                </div>
-                <div class="member-role">
-                    <span class="role-badge role-${member.role}">${member.role}</span>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     async loadGroupBoards(groupId) {
@@ -411,6 +482,244 @@ class GroupsPage {
             this.loadGroupBoards(this.currentGroup.id);
         } catch (error) {
             console.error('Error creating group board:', error);
+            this.showError(error.message);
+        }
+    }
+
+    showEditGroupModal() {
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        // Populate form with current group data
+        document.getElementById('edit-group-name').value = this.currentGroup.name;
+        document.getElementById('edit-group-description').value = this.currentGroup.description || '';
+        
+        // Show modal
+        document.getElementById('edit-group-modal').style.display = 'block';
+    }
+
+    hideEditGroupModal() {
+        document.getElementById('edit-group-modal').style.display = 'none';
+    }
+
+    async updateGroup() {
+        if (!this.currentGroup) return;
+
+        const name = document.getElementById('edit-group-name').value;
+        const description = document.getElementById('edit-group-description').value;
+
+        try {
+            const response = await fetch(`/api/groups/${this.currentGroup.id}`, {
+                method: 'PUT',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    name: name,
+                    description: description || null
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to update group');
+            }
+
+            const updatedGroup = await response.json();
+            this.showSuccess(`Group "${updatedGroup.name}" updated successfully!`);
+            this.hideEditGroupModal();
+            
+            // Update current group and refresh display
+            this.currentGroup = updatedGroup;
+            await this.loadGroups();
+            this.showGroupDetails();
+        } catch (error) {
+            console.error('Error updating group:', error);
+            this.showError(error.message);
+        }
+    }
+
+    confirmDeleteGroup() {
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to delete the group "${this.currentGroup.name}"?\n\nThis will:\n- Remove all members from the group\n- Unlink all group boards (boards will remain but become personal)\n- This action cannot be undone`;
+        
+        if (confirm(confirmMessage)) {
+            this.deleteGroup();
+        }
+    }
+
+    async deleteGroup() {
+        if (!this.currentGroup) return;
+
+        const groupId = this.currentGroup.id;
+        const groupName = this.currentGroup.name;
+
+        try {
+            const response = await fetch(`/api/groups/${groupId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to delete group');
+            }
+
+            this.showSuccess(`Group "${groupName}" deleted successfully!`);
+            this.currentGroup = null;
+            
+            // Refresh groups list
+            await this.loadGroups();
+            this.showGroupsList();
+        } catch (error) {
+            console.error('Error deleting group:', error);
+            this.showError(error.message);
+        }
+    }
+
+    // Member Management Methods
+
+    showInviteMemberModal() {
+        console.log('showInviteMemberModal called');
+        console.log('currentGroup:', this.currentGroup);
+        
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        // Check if user has permission (admin or owner)
+        const userRole = this.currentGroup.user_role;
+        console.log('User role:', userRole);
+        
+        if (userRole !== 'admin' && userRole !== 'owner') {
+            this.showError('Only admins and owners can invite members');
+            return;
+        }
+
+        const modal = document.getElementById('invite-member-modal');
+        const form = document.getElementById('invite-member-form');
+        
+        console.log('Modal element:', modal);
+        console.log('Form element:', form);
+        
+        // Reset form
+        form.reset();
+        
+        // Show modal
+        modal.style.display = 'block';
+        
+        // Focus on email input
+        setTimeout(() => {
+            document.getElementById('member-email').focus();
+        }, 100);
+    }
+
+    hideInviteMemberModal() {
+        const modal = document.getElementById('invite-member-modal');
+        modal.style.display = 'none';
+    }
+
+    async inviteMember() {
+        if (!this.currentGroup) return;
+
+        const emailOrId = document.getElementById('member-email').value.trim();
+        const role = document.getElementById('member-role').value;
+
+        if (!emailOrId) {
+            this.showError('Please enter a user email or ID');
+            return;
+        }
+
+        try {
+            // First, try to find the user by email or ID
+            let userId;
+            
+            // Check if input is a number (user ID)
+            if (/^\d+$/.test(emailOrId)) {
+                userId = parseInt(emailOrId);
+            } else {
+                // It's an email, search for the user
+                const searchResponse = await fetch(`/api/auth/users/search?email=${encodeURIComponent(emailOrId)}`, {
+                    headers: this.getAuthHeaders()
+                });
+
+                if (searchResponse.ok) {
+                    const users = await searchResponse.json();
+                    if (users.length === 0) {
+                        throw new Error('User not found with that email');
+                    }
+                    userId = users[0].id;
+                } else {
+                    const error = await searchResponse.json();
+                    throw new Error(error.detail || 'Failed to search for user');
+                }
+            }
+
+            // Add member to group
+            const response = await fetch(`/api/groups/${this.currentGroup.id}/members`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({
+                    user_id: userId,
+                    role: role
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to invite member');
+            }
+
+            const result = await response.json();
+            
+            this.showSuccess(`Member invited successfully!`);
+            this.hideInviteMemberModal();
+            
+            // Refresh group details to show new member
+            await this.viewGroup(this.currentGroup.id);
+        } catch (error) {
+            console.error('Error inviting member:', error);
+            this.showError(error.message);
+        }
+    }
+
+    async removeMember(userId, username) {
+        if (!this.currentGroup) return;
+
+        // Check if user has permission
+        const userRole = this.currentGroup.user_role;
+        if (userRole !== 'admin' && userRole !== 'owner') {
+            this.showError('Only admins and owners can remove members');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to remove ${username} from this group?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/groups/${this.currentGroup.id}/members/${userId}`, {
+                method: 'DELETE',
+                headers: this.getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to remove member');
+            }
+
+            this.showSuccess(`${username} removed from group`);
+            
+            // Refresh group details
+            await this.viewGroup(this.currentGroup.id);
+        } catch (error) {
+            console.error('Error removing member:', error);
             this.showError(error.message);
         }
     }

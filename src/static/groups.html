@@ -119,6 +119,10 @@
                                 <i class="fas fa-edit"></i>
                                 Edit Group
                             </button>
+                            <button class="btn btn-danger" id="delete-group-btn">
+                                <i class="fas fa-trash"></i>
+                                Delete Group
+                            </button>
                             <button class="btn btn-success" id="create-group-board-btn">
                                 <i class="fas fa-plus"></i>
                                 Create Board
@@ -154,7 +158,7 @@
                         <div class="group-members-card">
                             <div class="card-header">
                                 <h3>Members</h3>
-                                <button class="btn btn-sm btn-primary" id="invite-member-btn">
+                                <button class="btn btn-sm btn-primary" id="invite-member-btn" onclick="console.log('Button clicked!'); if(window.groupsPage) { window.groupsPage.showInviteMemberModal(); } else { console.error('groupsPage not found'); }">
                                     <i class="fas fa-user-plus"></i>
                                     Invite Member
                                 </button>
@@ -212,9 +216,77 @@
                 </div>
             </div>
         </div>
+
+        <!-- Edit Group Modal -->
+        <div id="edit-group-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Edit Group</h3>
+                    <button class="modal-close" id="edit-group-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-group-form">
+                        <div class="form-group">
+                            <label for="edit-group-name">Group Name</label>
+                            <input type="text" id="edit-group-name" name="name" required 
+                                   placeholder="Enter group name" maxlength="255">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-group-description">Description (Optional)</label>
+                            <textarea id="edit-group-description" name="description" 
+                                      placeholder="Describe the purpose of this group" 
+                                      maxlength="1000" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit-group">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </main>
+        </div>
+
+        <!-- Invite Member Modal -->
+        <div id="invite-member-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Invite Member to Group</h3>
+                    <button class="modal-close" id="invite-member-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="invite-member-form">
+                        <div class="form-group">
+                            <label for="member-email">User Email or ID</label>
+                            <input type="text" id="member-email" name="email" required 
+                                   placeholder="Enter user email or user ID">
+                            <small class="form-help">Enter the email address or user ID of the person you want to invite</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="member-role">Role</label>
+                            <select id="member-role" name="role" required>
+                                <option value="member">Member - Can view and edit group boards</option>
+                                <option value="admin">Admin - Can manage members and settings</option>
+                            </select>
+                            <small class="form-help">Admins can invite and remove members</small>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-invite-member">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i>
+                                Invite Member
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
         <!-- Notification System -->
         <div id="notification" class="notification">

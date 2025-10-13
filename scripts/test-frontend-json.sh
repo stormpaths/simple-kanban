@@ -30,8 +30,9 @@ cd "$FRONTEND_TEST_DIR"
 START_TIME=$(date +%s)
 TIMESTAMP=$(date -Iseconds)
 
-# Run tests and capture output
-if docker-compose run --rm frontend-tests pytest --json-report --json-report-file=/app/test-results/pytest-report.json -v 2>&1 | tee /tmp/frontend-test-output.txt; then
+# Run tests with parallel execution (2 workers for reliability)
+# Use -n 2 for parallel execution to achieve 100% pass rate
+if docker-compose run --rm frontend-tests pytest -n 2 --dist loadgroup --json-report --json-report-file=/app/test-results/pytest-report.json -v 2>&1 | tee /tmp/frontend-test-output.txt; then
     TEST_SUCCESS=true
     EXIT_CODE=0
 else

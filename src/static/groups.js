@@ -59,6 +59,9 @@ class GroupManager {
                                 <button class="btn btn-success btn-sm" id="create-group-board-btn">
                                     <i class="fas fa-plus"></i> Create Board
                                 </button>
+                                <button class="btn btn-danger btn-sm" id="delete-group-btn">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
                             </div>
                         </div>
                         
@@ -99,6 +102,14 @@ class GroupManager {
         // Group actions
         document.getElementById('create-group-btn').addEventListener('click', () => {
             this.showCreateGroupForm();
+        });
+
+        document.getElementById('edit-group-btn').addEventListener('click', () => {
+            this.showEditGroupForm();
+        });
+
+        document.getElementById('delete-group-btn').addEventListener('click', () => {
+            this.confirmDeleteGroup();
         });
 
         document.getElementById('create-group-board-btn').addEventListener('click', () => {
@@ -303,6 +314,143 @@ class GroupManager {
 
     cancelCreateGroup() {
         this.loadGroups(); // Go back to groups list
+    }
+
+    showEditGroupForm() {
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        const formHtml = `
+            <div class="form-container">
+                <h3><i class="fas fa-edit"></i> Edit Group</h3>
+                <form id="edit-group-form">
+                    <div class="form-group">
+                        <label for="edit-group-name">Group Name</label>
+                        <input type="text" id="edit-group-name" name="name" required 
+                               placeholder="Enter group name" maxlength="255"
+                               value="${this.escapeHtml(this.currentGroup.name)}">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-group-description">Description (Optional)</label>
+                        <textarea id="edit-group-description" name="description" 
+                                  placeholder="Describe the purpose of this group" 
+                                  maxlength="1000" rows="3">${this.escapeHtml(this.currentGroup.description || '')}</textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="groupManager.cancelEditGroup()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.getElementById('groups-list').innerHTML = formHtml;
+        
+        document.getElementById('edit-group-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateGroup();
+        });
+    }
+
+    async updateGroup() {
+        if (!this.currentGroup) return;
+
+        const form = document.getElementById('edit-group-form');
+        const formData = new FormData(form);
+        
+        const groupData = {
+            name: formData.get('name'),
+            description: formData.get('description') || null
+        };
+
+        try {
+            const response = await fetch(`/api/groups/${this.currentGroup.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(groupData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to update group');
+            }
+
+            const updatedGroup = await response.json();
+            this.showSuccess(`Group "${updatedGroup.name}" updated successfully!`);
+            this.currentGroup = updatedGroup;
+            await this.loadGroups(); // Refresh the list
+            this.showGroupDetails(updatedGroup); // Show updated details
+        } catch (error) {
+            console.error('Error updating group:', error);
+            this.showError(error.message);
+        }
+    }
+
+    cancelEditGroup() {
+        if (this.currentGroup) {
+            this.showGroupDetails(this.currentGroup); // Go back to group details
+        } else {
+            this.loadGroups(); // Go back to groups list
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    confirmDeleteGroup() {
+        if (!this.currentGroup) {
+            this.showError('No group selected');
+            return;
+        }
+
+        const confirmMessage = `Are you sure you want to delete the group "${this.currentGroup.name}"?\n\nThis will:\n- Remove all members from the group\n- Unlink all group boards (boards will remain but become personal)\n- This action cannot be undone`;
+        
+        if (confirm(confirmMessage)) {
+            this.deleteGroup();
+        }
+    }
+
+    async deleteGroup() {
+        if (!this.currentGroup) return;
+
+        const groupId = this.currentGroup.id;
+        const groupName = this.currentGroup.name;
+
+        try {
+            const response = await fetch(`/api/groups/${groupId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to delete group');
+            }
+
+            this.showSuccess(`Group "${groupName}" deleted successfully!`);
+            this.currentGroup = null;
+            document.getElementById('group-details').style.display = 'none';
+            await this.loadGroups(); // Refresh the list
+        } catch (error) {
+            console.error('Error deleting group:', error);
+            this.showError(error.message);
+        }
     }
 
     async createGroupBoard() {

@@ -25,17 +25,12 @@ class TestGroupManagement:
         # Verify page elements
         expect(page.locator("h1")).to_contain_text("Group Management")
         expect(page.locator("#create-group-btn")).to_be_visible()
-
         print("✅ Groups page loaded successfully")
 
     def test_create_group_with_all_fields(
         self, authenticated_page: Page, base_url: str
     ):
-        """
-        Test creating a group with all fields populated.
-
-        Validates that both name and description are saved correctly.
-        """
+        """Test creating a group with all fields filled."""
         page = authenticated_page
 
         # Navigate to groups page
@@ -44,6 +39,7 @@ class TestGroupManagement:
 
         # Click create group button
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
 
         # Wait for modal
         page.wait_for_selector("#create-group-modal", state="visible")
@@ -71,9 +67,6 @@ class TestGroupManagement:
 
         print(f"✅ Group created: {group_name}")
 
-    @pytest.mark.skip(
-        reason="Group edit workflow needs investigation - edit button not appearing"
-    )
     def test_edit_group_multiple_times_all_fields(
         self, authenticated_page: Page, base_url: str
     ):
@@ -90,6 +83,7 @@ class TestGroupManagement:
 
         # Create a group first
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         initial_name = f"Multi-Edit Group {int(page.evaluate('Date.now()'))}"
@@ -98,57 +92,80 @@ class TestGroupManagement:
         page.fill("#group-name", initial_name)
         page.locator("#create-group-form button[type='submit']").click()
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)  # Wait for group to be created and list to refresh
 
         # Now edit the group 3 times
         for iteration in range(3):
             print(f"\n=== Group Edit Iteration {iteration + 1} ===")
 
-            # Find and click the group card to view it
+            # Find the group card
             group_card = page.locator(f".group-card:has-text('{initial_name}')").first
-            group_card.click()
+            
+            # Verify card exists and is visible
+            expect(group_card).to_be_visible(timeout=5000)
+            print(f"  Group card found: {initial_name}")
+            
+            # Click the "View Details" button inside the card
+            view_button = group_card.locator("button:has-text('View Details')")
+            view_button.click()
 
-            # Wait for group details to load and edit button to appear
+            # Give JavaScript time to load details
+            page.wait_for_timeout(1000)
+
+            # Wait for group details to load - check for the title element
+            page.wait_for_selector("#group-details-title", state="visible", timeout=10000)
+            
+            # Wait for edit button to appear
             page.wait_for_selector("#edit-group-btn", state="visible", timeout=5000)
 
             # Click edit button in the group details view
             edit_btn = page.locator("#edit-group-btn")
             edit_btn.click()
 
-            # Wait for edit modal/form
+            # Give JavaScript time to show modal
             page.wait_for_timeout(1000)
+
+            # Wait for edit modal to appear
+            page.wait_for_selector("#edit-group-modal", state="visible", timeout=10000)
 
             # Update both fields
             new_name = f"{initial_name} - Edit {iteration + 1}"
             new_desc = f"Updated description - iteration {iteration + 1}"
 
-            # Find name and description inputs (might be in modal or inline)
-            name_input = page.locator("#group-name, input[name='name']").first
-            desc_input = page.locator(
-                "#group-description, textarea[name='description']"
-            ).first
+            # Use the edit modal's specific input fields
+            name_input = page.locator("#edit-group-name")
+            desc_input = page.locator("#edit-group-description")
 
             name_input.fill(new_name)
             desc_input.fill(new_desc)
 
-            # Save changes
-            save_btn = page.locator(
-                "button:has-text('Save'), button[type='submit']"
-            ).first
+            # Save changes - find submit button within the edit modal
+            save_btn = page.locator("#edit-group-form button[type='submit']")
             expect(save_btn).to_be_visible()
             expect(save_btn).to_be_enabled()
             save_btn.click()
 
-            # Wait for save to complete
-            page.wait_for_timeout(2000)
+            # Wait for modal to close
+            page.wait_for_selector("#edit-group-modal", state="hidden", timeout=5000)
+            
+            # Wait for update to complete
+            page.wait_for_timeout(1000)
 
-            # Verify group name updated
-            expect(page.locator("body")).to_contain_text(new_name)
+            # Verify group name updated in the details view
+            expect(page.locator("#group-details-title")).to_contain_text(new_name)
 
             # Update current name for next iteration
-            current_name = new_name
+            initial_name = new_name
 
             print(f"  ✅ Edit {iteration + 1} successful: {new_name}")
+            
+            # Go back to groups list for next iteration (if not the last one)
+            if iteration < 2:  # 0, 1, 2 - so skip on iteration 2
+                back_btn = page.locator("#back-to-groups-btn")
+                back_btn.click()
+                page.wait_for_timeout(1000)
+                # Wait for groups list to be visible
+                page.wait_for_selector("#create-group-btn", state="visible", timeout=5000)
 
         print(f"\n✅ Successfully edited group 3 times!")
 
@@ -161,13 +178,19 @@ class TestGroupManagement:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload for test isolation
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         group_names = []
 
         # Create 3 groups sequentially
         for i in range(3):
             page.click("#create-group-btn")
-            page.wait_for_selector("#create-group-modal", state="visible")
+            page.wait_for_timeout(2000)
+            page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
             group_name = (
                 f"Sequential Group {i + 1} - {int(page.evaluate('Date.now()'))}"
@@ -198,13 +221,18 @@ class TestGroupManagement:
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
 
+        # Use unique name to avoid conflicts with other tests
+        unique_name = f"CANCEL_TEST_{int(page.evaluate('Date.now()'))}"
+        unique_desc = f"CANCEL_DESC_{int(page.evaluate('Date.now()'))}"
+
         # Open create modal
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
-        # Fill form
-        page.fill("#group-name", "This should not be saved")
-        page.fill("#group-description", "This description should not be saved")
+        # Fill form with unique identifiers
+        page.fill("#group-name", unique_name)
+        page.fill("#group-description", unique_desc)
 
         # Click cancel
         cancel_btn = page.locator(
@@ -215,14 +243,13 @@ class TestGroupManagement:
 
         # Wait for modal to close
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(2000)  # Increased wait time for test isolation
 
-        # Verify group was not created
-        expect(page.locator("body")).not_to_contain_text("This should not be saved")
+        # Verify group was not created (check for unique name)
+        expect(page.locator("body")).not_to_contain_text(unique_name)
 
-        print("✅ Cancel button works - group not created")
+        print(f"✅ Cancel button works - group '{unique_name}' not created")
 
-    @pytest.mark.skip(reason="Group delete UI not implemented yet")
     def test_delete_group(self, authenticated_page: Page, base_url: str):
         """Test deleting a group."""
         page = authenticated_page
@@ -233,47 +260,55 @@ class TestGroupManagement:
 
         # Create a group to delete
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         group_name = f"Delete Test Group {int(page.evaluate('Date.now()'))}"
         page.fill("#group-name", group_name)
         page.locator("#create-group-form button[type='submit']").click()
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(2000)  # Wait for group to be created and list to refresh
 
         # Verify group exists
         expect(page.locator("body")).to_contain_text(group_name)
 
-        # Find and click delete button
-        group_card = page.locator(
-            f".group-card:has-text('{group_name}'), .group-item:has-text('{group_name}')"
-        ).first
-        delete_btn = group_card.locator(
-            "button:has-text('Delete'), .delete-btn, [title*='Delete']"
-        ).first
+        # Click on the group to open details
+        group_card = page.locator(f".group-card:has-text('{group_name}')").first
+        
+        # Click the "View Details" button inside the card
+        view_button = group_card.locator("button:has-text('View Details')")
+        view_button.click()
+        
+        # Give JavaScript time to load details
+        page.wait_for_timeout(1000)
+        
+        # Wait for group details to load - check for the title element
+        page.wait_for_selector("#group-details-title", state="visible", timeout=5000)
+        
+        # Wait for delete button to appear
+        page.wait_for_selector("#delete-group-btn", state="visible", timeout=5000)
 
-        if delete_btn.count() > 0:
-            delete_btn.click()
-        else:
-            # Might need to open group details first
-            group_card.click()
-            page.wait_for_timeout(500)
-            delete_btn = page.locator("button:has-text('Delete'), .delete-btn").first
-            delete_btn.click()
+        # Set up dialog handler BEFORE clicking (must be synchronous)
+        def handle_dialog(dialog):
+            print(f"Dialog appeared: {dialog.message}")
+            dialog.accept()
+        
+        page.once("dialog", handle_dialog)
+        
+        # Click delete button
+        delete_btn = page.locator("#delete-group-btn")
+        delete_btn.click()
 
-        # Handle confirmation dialog
-        page.wait_for_timeout(500)
-        confirm_btn = page.locator(
-            "button:has-text('Delete'), button:has-text('Confirm')"
-        ).first
-        if confirm_btn.is_visible():
-            confirm_btn.click()
+        # Wait for deletion to complete and return to groups list
+        # The delete operation: shows confirm, deletes group, returns to list, refreshes
+        page.wait_for_timeout(3000)
+        
+        # Wait for groups list to be visible again (we should be back on the list)
+        page.wait_for_selector("#create-group-btn", state="visible", timeout=5000)
 
-        # Wait for deletion
-        page.wait_for_timeout(2000)
-
-        # Verify group is deleted
-        expect(page.locator("body")).not_to_contain_text(group_name)
+        # Verify group is deleted - the specific group card should not exist
+        deleted_group_card = page.locator(f".group-card:has-text('{group_name}')")
+        expect(deleted_group_card).to_have_count(0)
 
         print(f"✅ Group deleted: {group_name}")
 
@@ -289,10 +324,16 @@ class TestGroupMemberManagement:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload for test isolation
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         # Create a group
         page.click("#create-group-btn")
-        page.wait_for_selector("#create-group-modal", state="visible")
+        page.wait_for_timeout(2000)
+        page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
         group_name = f"Member Test Group {int(page.evaluate('Date.now()'))}"
         page.fill("#group-name", group_name)
@@ -300,39 +341,44 @@ class TestGroupMemberManagement:
         page.wait_for_selector("#create-group-modal", state="hidden")
         page.wait_for_timeout(1000)
 
-        # Open group details
-        group_card = page.locator(
-            f".group-card:has-text('{group_name}'), .group-item:has-text('{group_name}')"
+        # Open group details by clicking the "View Details" button
+        view_details_btn = page.locator(
+            f".group-card:has-text('{group_name}') button:has-text('View Details')"
         ).first
-        group_card.click()
+        view_details_btn.click()
+        
+        # Wait for group details section to become visible and invite button to appear
+        page.wait_for_selector("#group-details-section", state="visible", timeout=5000)
         page.wait_for_timeout(1000)
 
-        # Find add member button
-        add_member_btn = page.locator(
-            "button:has-text('Add Member'), #add-member-btn"
-        ).first
+        # Find invite member button in the group details section
+        invite_member_btn = page.locator("#invite-member-btn").first
 
-        if add_member_btn.count() > 0 and add_member_btn.is_visible():
-            add_member_btn.click()
+        if invite_member_btn.count() > 0 and invite_member_btn.is_visible():
+            invite_member_btn.click()
             page.wait_for_timeout(500)
 
-            # Fill member email/username
-            member_input = page.locator(
-                "#member-email, #member-username, input[placeholder*='email'], input[placeholder*='username']"
-            ).first
+            # Wait for modal to appear
+            page.wait_for_selector("#invite-member-modal", state="visible", timeout=2000)
+
+            # Fill member email
+            member_input = page.locator("#invite-email").first
             if member_input.count() > 0:
                 member_input.fill("test@example.com")
 
+                # Select role
+                role_select = page.locator("#invite-role").first
+                if role_select.count() > 0:
+                    role_select.select_option("member")
+
                 # Submit
-                submit_btn = page.locator(
-                    "button:has-text('Add'), button[type='submit']"
-                ).first
+                submit_btn = page.locator("#invite-member-form button[type='submit']").first
                 submit_btn.click()
                 page.wait_for_timeout(1000)
 
-                print("✅ Member add functionality tested")
+                print("✅ Member invite functionality tested")
         else:
-            pytest.skip("Add member functionality not available in UI")
+            pytest.skip("Invite member functionality not available in UI")
 
     def test_group_member_list(self, authenticated_page: Page, base_url: str):
         """Test viewing group members."""
@@ -344,6 +390,7 @@ class TestGroupMemberManagement:
 
         # Create a group
         page.click("#create-group-btn")
+        page.wait_for_timeout(1000)
         page.wait_for_selector("#create-group-modal", state="visible")
 
         group_name = f"Members List Group {int(page.evaluate('Date.now()'))}"
@@ -383,9 +430,15 @@ class TestGroupEdgeCases:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload page for better test isolation after many previous tests
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         page.click("#create-group-btn")
-        page.wait_for_selector("#create-group-modal", state="visible")
+        page.wait_for_timeout(2000)  # Increased wait for test isolation
+        page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
         # Try to submit with empty name
         page.fill("#group-name", "")
@@ -404,19 +457,22 @@ class TestGroupEdgeCases:
         # Navigate to groups page
         page.goto(f"{base_url}/static/groups.html")
         page.wait_for_selector("#create-group-btn", timeout=10000)
+        
+        # Reload page for better test isolation after many previous tests
+        page.reload()
+        page.wait_for_selector("#create-group-btn", timeout=10000)
+        page.wait_for_timeout(1000)
 
         page.click("#create-group-btn")
-        page.wait_for_selector("#create-group-modal", state="visible")
+        page.wait_for_timeout(2000)  # Increased wait for test isolation
+        page.wait_for_selector("#create-group-modal", state="visible", timeout=15000)
 
         group_name = f"No Desc Group {int(page.evaluate('Date.now()'))}"
-
-        # Fill only name
         page.fill("#group-name", group_name)
         page.fill("#group-description", "")  # Explicitly empty
 
         page.locator("#create-group-form button[type='submit']").click()
         page.wait_for_selector("#create-group-modal", state="hidden")
-        page.wait_for_timeout(1000)
 
         # Verify group created
         expect(page.locator("body")).to_contain_text(group_name)

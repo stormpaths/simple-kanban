@@ -198,6 +198,10 @@
                         <p id="board-description">Board description</p>
                     </div>
                     <div class="board-actions">
+                        <button class="btn btn-primary" id="add-column-btn">
+                            <i class="fas fa-plus"></i>
+                            Add Column
+                        </button>
                         <button class="btn btn-secondary" id="edit-board-btn">
                             <i class="fas fa-edit"></i>
                             Edit Board
@@ -242,6 +246,35 @@
                     <div class="modal-actions-right">
                         <button type="button" class="btn btn-secondary" id="board-cancel">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="board-submit">Create Board</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Column Modal -->
+    <div id="column-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="column-modal-title">Add Column</h3>
+                <button class="modal-close" id="column-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="column-form">
+                <div class="form-group">
+                    <label for="column-name">Column Name</label>
+                    <input type="text" id="column-name" name="name" required placeholder="Enter column name (e.g., To Do, In Progress, Done)">
+                </div>
+                <div class="form-group">
+                    <label for="column-position">Position</label>
+                    <input type="number" id="column-position" name="position" min="0" placeholder="Leave empty to add at end">
+                    <small class="form-help">Position 0 is leftmost. Leave empty to add at the end.</small>
+                </div>
+                <div class="modal-actions">
+                    <div class="modal-actions-right">
+                        <button type="button" class="btn btn-secondary" id="column-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="column-submit">Add Column</button>
                     </div>
                 </div>
             </form>
