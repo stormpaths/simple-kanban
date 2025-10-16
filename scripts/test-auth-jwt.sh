@@ -16,7 +16,7 @@ Usage:
 set -e
 
 # Configuration
-NAMESPACE="apps-dev"
+NAMESPACE="${NAMESPACE:-apps-dev}"
 
 # Function to get the service URL dynamically
 get_service_url() {

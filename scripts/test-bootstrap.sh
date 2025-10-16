@@ -16,9 +16,14 @@
 
 set -e
 
-# Configuration
-NAMESPACE="apps-dev"
+# Configuration - allow namespace override via environment or argument
+NAMESPACE="${NAMESPACE:-apps-dev}"
 SECRET_NAME="simple-kanban-test-api-key"
+
+# Parse command line arguments
+if [ "$1" != "--cleanup-only" ] && [ -n "$1" ]; then
+    NAMESPACE="$1"
+fi
 
 # Function to get the service URL dynamically
 get_service_url() {

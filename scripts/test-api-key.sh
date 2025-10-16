@@ -13,7 +13,7 @@ Scopes: read, write, docs, admin
 set -e
 
 # Configuration
-NAMESPACE="apps-dev"
+NAMESPACE="${NAMESPACE:-apps-dev}"
 SECRET_NAME="simple-kanban-test-api-key"
 
 # Function to get the service URL dynamically

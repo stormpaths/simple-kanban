@@ -110,10 +110,10 @@ else
     TEST_ARGS="--quick"
 fi
 
-# Execute tests with BASE_URL
+# Execute tests with BASE_URL and NAMESPACE
 TEST_EXIT_CODE=0
 log_info "Running tests against: $BASE_URL"
-if BASE_URL="$BASE_URL" "$TEST_SCRIPT" $TEST_ARGS; then
+if BASE_URL="$BASE_URL" NAMESPACE="$NAMESPACE" "$TEST_SCRIPT" $TEST_ARGS; then
     log_success "All tests passed! Deployment validation successful."
     
     # Show test summary

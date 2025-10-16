@@ -16,7 +16,7 @@ set -e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NAMESPACE="apps-dev"
+NAMESPACE="${NAMESPACE:-apps-dev}"
 SECRET_NAME="simple-kanban-test-api-key"
 
 # Function to get the service URL dynamically

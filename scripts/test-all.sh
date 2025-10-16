@@ -17,7 +17,7 @@ set -e
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-NAMESPACE="apps-dev"
+NAMESPACE="${NAMESPACE:-apps-dev}"
 SECRET_NAME="simple-kanban-test-api-key"
 
 # Function to get the service URL dynamically
@@ -241,7 +241,7 @@ verify_api_key() {
         # Try to run bootstrap script
         if [ -f "$SCRIPT_DIR/test-bootstrap.sh" ]; then
             log_info "Running bootstrap script to create test environment..."
-            if "$SCRIPT_DIR/test-bootstrap.sh" > /dev/null 2>&1; then
+            if NAMESPACE="$NAMESPACE" BASE_URL="$BASE_URL" "$SCRIPT_DIR/test-bootstrap.sh" > /dev/null 2>&1; then
                 log_success "Bootstrap completed - test environment created"
                 # Verify the key was created
                 local api_key=$(kubectl get secret "$SECRET_NAME" -n "$NAMESPACE" -o jsonpath='{.data.api-key}' | base64 -d 2>/dev/null)
