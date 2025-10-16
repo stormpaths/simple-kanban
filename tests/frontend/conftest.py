@@ -156,6 +156,15 @@ def browser_context_args(browser_context_args):
     }
 
 
+@pytest.fixture(scope="session")
+def browser_type_launch_args(browser_type_launch_args):
+    """Configure browser launch with slow_mo for CI environments."""
+    return {
+        **browser_type_launch_args,
+        "slow_mo": 100,  # Add 100ms delay between actions for stability
+    }
+
+
 @pytest.fixture
 def authenticated_page(
     page: Page, base_url: str, test_username: str, test_password: str
@@ -181,11 +190,12 @@ def authenticated_page(
     page.fill("#login-email", test_username)
     page.fill("#login-password", test_password)
 
-    # Submit login form
+    # Submit the login form
     page.click("#login-email-form button[type='submit']")
 
     # Wait for successful login (board selector should appear)
-    page.wait_for_selector("#board-select", timeout=10000)
+    # Use longer timeout for CI environments where API calls may be slower
+    page.wait_for_selector("#board-select", timeout=20000)
 
     yield page
 

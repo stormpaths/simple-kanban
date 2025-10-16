@@ -28,7 +28,8 @@ class TestAuthentication:
         page.click("#login-email-form button[type='submit']")
 
         # Verify successful login - board selector should be visible
-        page.wait_for_selector("#board-select", timeout=10000)
+        # Use longer timeout for CI environments where API calls may be slower
+        page.wait_for_selector("#board-select", timeout=20000)
         expect(page.locator("#board-select")).to_be_visible()
 
         # Verify user menu button is visible (logout is in dropdown)
