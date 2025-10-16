@@ -435,7 +435,9 @@ verify_api_key
 # Core functionality tests
 log_header "CORE FUNCTIONALITY TESTS"
 
-# Test 1: Comprehensive Authentication System
+# Export environment variables for child scripts
+export BASE_URL
+export NAMESPACE
 export QUICK_MODE_ENV="$QUICK_MODE"
 if [ "$QUICK_MODE" = true ]; then
     run_test_script "test-auth-comprehensive.sh" "Comprehensive Authentication System (Quick)"
