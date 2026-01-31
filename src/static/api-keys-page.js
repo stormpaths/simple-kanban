@@ -12,11 +12,8 @@ class ApiKeysPage {
 
     async init() {
         this.checkAuth();
-        console.log('API Keys page initializing...');
         await this.loadApiKeys();
-        console.log('About to load stats on init...');
         await this.loadStats();
-        console.log('Stats loaded on init.');
         // Delay event binding to ensure DOM is ready
         setTimeout(() => {
             this.bindEvents();
@@ -37,7 +34,7 @@ class ApiKeysPage {
                     return; // We're authenticated via cookies
                 }
             } catch (error) {
-                console.log('No cookie auth available');
+                // No cookie auth available
             }
             
             // No authentication found, redirect
@@ -139,7 +136,6 @@ class ApiKeysPage {
             }
 
             const data = await response.json();
-            console.log('API Keys response:', data);
             
             // Handle the response format: { api_keys: [...], total: N }
             if (data && Array.isArray(data.api_keys)) {
@@ -150,7 +146,6 @@ class ApiKeysPage {
                 this.apiKeys = [];
             }
             
-            console.log('Loaded API keys:', this.apiKeys);
             this.renderApiKeys();
         } catch (error) {
             console.error('Error loading API keys:', error);
@@ -160,11 +155,8 @@ class ApiKeysPage {
 
     renderApiKeys() {
         const container = document.getElementById('api-keys-container');
-        console.log('renderApiKeys called with:', this.apiKeys);
-        console.log('Container element found:', !!container);
         
         if (!Array.isArray(this.apiKeys) || this.apiKeys.length === 0) {
-            console.log('Showing empty state - no API keys');
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-key"></i>
@@ -179,8 +171,6 @@ class ApiKeysPage {
             return;
         }
 
-        console.log('Rendering API keys table with', this.apiKeys.length, 'keys');
-        
         container.innerHTML = `
             <div class="api-keys-table-wrapper">
                 <table class="api-keys-table">
@@ -336,7 +326,6 @@ class ApiKeysPage {
 
     async loadStats() {
         try {
-            console.log('Loading API key usage statistics...');
             const response = await fetch('/api/api-keys/stats/usage', {
                 headers: this.getAuthHeaders()
             });
@@ -346,7 +335,6 @@ class ApiKeysPage {
             }
 
             const stats = await response.json();
-            console.log('Loaded stats:', stats);
             
             // Transform the API response to match our UI format
             const uiStats = {
