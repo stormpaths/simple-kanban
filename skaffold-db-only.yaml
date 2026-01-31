@@ -2,83 +2,49 @@ apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: simple-kanban-db
+# NOTE: PostgreSQL is now managed by CNPG - see infra/kubernetes/cnpg/clusters/
+# This file now only manages Redis deployments
 deploy:
   helm:
     releases:
-    - name: simple-kanban-postgres-dev
-      remoteChart: bitnami/postgresql
-      version: "16.7.11"
-      namespace: apps-dev
-      setValues:
-        auth.existingSecret: simple-kanban-postgres-dev-secret
-        auth.secretKeys.adminPasswordKey: postgres-password
-        auth.secretKeys.userPasswordKey: postgres-password
-        auth.username: kanban
-        auth.database: simple_kanban
-        primary.persistence.size: 1Gi
     - name: simple-kanban-redis-dev
-      remoteChart: bitnami/redis
-      version: "21.2.3"
+      chartPath: infra/kubernetes/charts/redis-cache
       namespace: apps-dev
       setValues:
+        auth.enabled: true
         auth.existingSecret: simple-kanban-redis-dev-secret
         auth.existingSecretPasswordKey: redis-password
-        master.persistence.size: 2Gi
-        replica.replicaCount: 0
+        persistence.enabled: false
 profiles:
 - name: dev
   deploy:
     helm:
       releases:
-      - name: simple-kanban-postgres-dev
-        remoteChart: bitnami/postgresql
-        version: "16.7.11"
-        namespace: apps-dev
-        setValues:
-          auth.existingSecret: simple-kanban-postgres-dev-secret
-          auth.secretKeys.adminPasswordKey: postgres-password
-          auth.secretKeys.userPasswordKey: password
-          auth.username: kanban
-          auth.database: simple_kanban
-          primary.persistence.size: 1Gi
+      # PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-dev.yaml
       - name: simple-kanban-redis-dev
-        remoteChart: bitnami/redis
-        version: "21.2.3"
+        chartPath: infra/kubernetes/charts/redis-cache
         namespace: apps-dev
         setValues:
+          auth.enabled: true
           auth.existingSecret: simple-kanban-redis-dev-secret
           auth.existingSecretPasswordKey: redis-password
-          master.persistence.size: 2Gi
-          replica.replicaCount: 0
+          persistence.enabled: false
 - name: prod
   deploy:
     helm:
       releases:
-      - name: simple-kanban-postgres
-        remoteChart: bitnami/postgresql
-        version: "16.7.11"
-        namespace: apps
-        setValues:
-          auth.existingSecret: simple-kanban-postgres-secret
-          auth.secretKeys.adminPasswordKey: postgres-password
-          auth.secretKeys.userPasswordKey: password
-          auth.username: kanban
-          auth.database: simple_kanban
-          primary.persistence.size: 2Gi
-          metrics.enabled: true
+      # PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-prod.yaml
       - name: simple-kanban-redis
-        remoteChart: bitnami/redis
-        version: "21.2.3"
+        chartPath: infra/kubernetes/charts/redis-cache
         namespace: apps
         setValues:
+          auth.enabled: true
           auth.existingSecret: simple-kanban-redis-secret
           auth.existingSecretPasswordKey: redis-password
-          master.persistence.size: 2Gi
-          replica.replicaCount: 0
-          metrics.enabled: true
+          persistence.enabled: false
 portForward:
 - resourceType: service
-  resourceName: simple-kanban-postgres-dev-postgresql
+  resourceName: simple-kanban-postgres-dev-rw
   port: 5432
   localPort: 5432
 - resourceType: service

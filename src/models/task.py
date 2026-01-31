@@ -2,9 +2,10 @@
 Task model for kanban board tasks.
 """
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from sqlalchemy import String, Text, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .base import Base, TimestampMixin
 
@@ -23,6 +24,13 @@ class Task(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    
+    # Structured data fields for enhanced tracking
+    tags: Mapped[Optional[List[str]]] = mapped_column(JSONB, default=list)
+    task_metadata: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, default=dict)
+    priority: Mapped[str] = mapped_column(String(20), default="medium")
+    steps: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSONB, default=list)
+    results: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, nullable=True)
 
     # Foreign key to column
     column_id: Mapped[int] = mapped_column(

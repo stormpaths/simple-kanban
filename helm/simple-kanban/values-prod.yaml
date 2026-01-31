@@ -85,12 +85,13 @@ readinessProbe:
   failureThreshold: 3
 
 # Database and cache configuration for production
+# PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-prod.yaml
 storage:
   postgres:
-    hostname: simple-kanban-postgres-postgresql
+    hostname: simple-kanban-postgres-rw
     username: kanban
     database: simple_kanban
-    existingSecret: simple-kanban-postgres-secret
+    existingSecret: simple-kanban-cnpg-secret
     userPasswordKey: password
 
 cache:

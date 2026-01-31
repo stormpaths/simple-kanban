@@ -57,12 +57,13 @@ securityContext:
   readOnlyRootFilesystem: false
 
 # Database and cache configuration for development
+# PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-dev.yaml
 storage:
   postgres:
-    hostname: simple-kanban-postgres-dev-postgresql
+    hostname: simple-kanban-postgres-dev-rw
     username: kanban
     database: simple_kanban
-    existingSecret: simple-kanban-postgres-dev-secret
+    existingSecret: simple-kanban-cnpg-secret-dev
     userPasswordKey: password
 
 cache:

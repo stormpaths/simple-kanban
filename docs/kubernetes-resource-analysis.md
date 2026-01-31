@@ -11,7 +11,7 @@
 | Pod | Status | Restarts | Age | Health |
 |-----|--------|----------|-----|--------|
 | simple-kanban-8474d47c7c-djczl | Running | 0 | 3d9h | ✅ Healthy |
-| simple-kanban-postgres-postgresql-0 | Running | 0 | 30d | ✅ Healthy |
+| simple-kanban-postgres-1 | Running | 0 | 30d | ✅ Healthy |
 | simple-kanban-redis-master-0 | Running | 0 | 35d | ✅ Healthy |
 | simple-kanban-redis-replicas-0 | Running | 9 | 30d | ⚠️ Has restarted |
 | simple-kanban-redis-replicas-1 | Running | 0 | 30d | ✅ Healthy |

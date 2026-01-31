@@ -19,11 +19,8 @@ helm repo update
 
 ### 2. Check Latest Chart Versions
 ```bash
-# PostgreSQL
-helm search repo bitnami/postgresql --versions | head -5
-
-# Redis  
-helm search repo bitnami/redis --versions | head -5
+# Redis image tags
+docker pull redis:alpine
 
 # Other common charts
 helm search repo bitnami/mysql --versions | head -5
@@ -36,14 +33,16 @@ Update `skaffold.yaml` with latest stable versions:
 
 ```yaml
 # Current latest versions (as of 2025-08-27)
-- name: app-postgres
-  remoteChart: bitnami/postgresql
-  version: "16.7.11"  # PostgreSQL 17.5.0
-
 - name: app-redis
-  remoteChart: bitnami/redis
-  version: "21.2.3"   # Redis 8.0.2
+  chartPath: ../../infra/kubernetes/charts/redis-cache
+  setValues:
+    auth.enabled: true
+    auth.existingSecret: app-redis-secret
+    auth.existingSecretPasswordKey: redis-password
+    persistence.enabled: false
 ```
+
+PostgreSQL is managed by CloudNativePG (CNPG) and is not tracked as a Helm chart version.
 
 ## Version Selection Criteria
 
@@ -85,10 +84,7 @@ Add to project Makefile:
 check-chart-versions:
 	@echo "Checking latest chart versions..."
 	@helm repo update
-	@echo "PostgreSQL:"
-	@helm search repo bitnami/postgresql --versions | head -3
-	@echo "Redis:"
-	@helm search repo bitnami/redis --versions | head -3
+	@echo "Redis: check image tags manually"
 
 update-chart-versions:
 	@echo "Update skaffold.yaml with latest versions manually"
@@ -110,12 +106,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Setup Helm
-      uses: azure/setup-helm@v3
+    - uses: azure/setup-helm@v3
     - name: Check Chart Versions
       run: |
-        helm repo add bitnami https://charts.bitnami.com/bitnami
-        helm repo update
         make check-chart-versions
 ```
 
@@ -129,8 +122,7 @@ jobs:
 ### Vulnerability Scanning
 ```bash
 # Check for known vulnerabilities
-helm template app-postgres bitnami/postgresql --version 16.7.11 | \
-  docker run --rm -i aquasec/trivy config -
+docker run --rm aquasec/trivy image redis:alpine
 ```
 
 ## Best Practices
@@ -145,8 +137,6 @@ helm template app-postgres bitnami/postgresql --version 16.7.11 | \
 
 | Chart | Current Version | App Version | Last Updated |
 |-------|----------------|-------------|--------------|
-| bitnami/postgresql | 16.7.11 | 17.5.0 | 2025-08-27 |
-| bitnami/redis | 21.2.3 | 8.0.2 | 2025-08-27 |
 | bitnami/mysql | 11.1.15 | 8.4.2 | 2025-08-27 |
 | bitnami/mongodb | 16.0.1 | 8.0.1 | 2025-08-27 |
 
@@ -156,7 +146,7 @@ helm template app-postgres bitnami/postgresql --version 16.7.11 | \
 1. Check chart release notes for breaking changes
 2. Review application compatibility matrix
 3. Test with previous stable version if needed
-4. Consult Bitnami documentation
+4. Consult upstream chart documentation
 
 ### Update Failures
 1. Verify Helm repository is updated

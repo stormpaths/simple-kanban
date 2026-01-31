@@ -50,11 +50,20 @@ async def create_task(
             max_position = len(result.scalars().all())
             task.position = max_position
 
+        # Convert steps to dict format if provided
+        steps_data = None
+        if task.steps:
+            steps_data = [s.dict() if hasattr(s, 'dict') else s for s in task.steps]
+        
         db_task = Task(
             title=task.title,
             description=task.description,
             position=task.position,
             column_id=task.column_id,
+            tags=task.tags or [],
+            task_metadata=task.task_metadata or {},
+            priority=task.priority or "medium",
+            steps=steps_data or [],
         )
         db.add(db_task)
         await db.commit()
@@ -111,6 +120,16 @@ async def update_task(
         task.title = task_update.title
     if task_update.description is not None:
         task.description = task_update.description
+    if task_update.tags is not None:
+        task.tags = task_update.tags
+    if task_update.task_metadata is not None:
+        task.task_metadata = task_update.task_metadata
+    if task_update.priority is not None:
+        task.priority = task_update.priority
+    if task_update.steps is not None:
+        task.steps = [s.dict() if hasattr(s, 'dict') else s for s in task_update.steps]
+    if task_update.results is not None:
+        task.results = task_update.results.dict() if hasattr(task_update.results, 'dict') else task_update.results
     if task_update.position is not None:
         # Handle position changes within the same column
         old_position = task.position
