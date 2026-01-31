@@ -14,7 +14,7 @@ from sqlalchemy import select
 from ..database import get_db_session
 from ..models import Task, Column, Board, User
 from ..schemas import TaskCreate, TaskUpdate, TaskMove, TaskResponse
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, get_user_from_api_key_or_jwt
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ async def create_task(
     request: Request,
     task: TaskCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Create a new task in a column."""
     try:
@@ -79,7 +79,7 @@ async def create_task(
 async def get_task(
     task_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Get a specific task."""
     result = await db.execute(select(Task).where(Task.id == task_id))
@@ -96,7 +96,7 @@ async def update_task(
     task_id: int,
     task_update: TaskUpdate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Update a task's title, description, or position within the same column."""
     result = await db.execute(select(Task).where(Task.id == task_id))
@@ -150,7 +150,7 @@ async def move_task(
     task_id: int,
     move_data: TaskMove,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Move a task to a different column and position."""
     result = await db.execute(select(Task).where(Task.id == task_id))
@@ -228,7 +228,7 @@ async def move_task(
 async def delete_task(
     task_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Delete a task."""
     result = await db.execute(select(Task).where(Task.id == task_id))
