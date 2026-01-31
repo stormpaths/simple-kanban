@@ -179,51 +179,159 @@ class ApiKeysPage {
             return;
         }
 
-        console.log('Rendering API keys grid with', this.apiKeys.length, 'keys');
+        console.log('Rendering API keys table with', this.apiKeys.length, 'keys');
         
         container.innerHTML = `
-            <div class="api-keys-grid">
-                ${this.apiKeys.map(key => {
-                    console.log('Rendering key:', key);
-                    return `
-                    <div class="api-key-card" data-key-id="${key.id}">
-                        <div class="api-key-header">
-                            <h3>${this.escapeHtml(key.name)}</h3>
-                            <span class="key-status ${key.is_active ? 'active' : 'inactive'}">
-                                ${key.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                        </div>
-                        <p class="api-key-description">${this.escapeHtml(key.description || 'No description')}</p>
-                        <div class="api-key-details">
-                            <div class="key-detail">
-                                <strong>Key:</strong> 
-                                <code class="api-key-value">${key.key_prefix}...</code>
-                                <span class="key-hint" title="Full key only shown at creation">(hidden)</span>
-                            </div>
-                            <div class="key-detail">
-                                <strong>Created:</strong> ${this.formatDate(key.created_at)}
-                            </div>
-                            ${key.expires_at ? `
-                                <div class="key-detail">
-                                    <strong>Expires:</strong> ${this.formatDate(key.expires_at)}
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="api-key-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="apiKeysPage.toggleApiKey('${key.id}')">
-                                <i class="fas fa-${key.is_active ? 'pause' : 'play'}"></i>
-                                ${key.is_active ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="apiKeysPage.deleteApiKey('${key.id}')">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                `;
-                }).join('')}
+            <div class="api-keys-table-wrapper">
+                <table class="api-keys-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Key</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Expires</th>
+                            <th>Usage</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.apiKeys.map(key => `
+                            <tr data-key-id="${key.id}">
+                                <td>
+                                    <div class="key-name-cell">
+                                        <strong>${this.escapeHtml(key.name)}</strong>
+                                        ${key.description ? `<span class="key-desc">${this.escapeHtml(key.description)}</span>` : ''}
+                                    </div>
+                                </td>
+                                <td><code class="key-prefix">${key.key_prefix}...</code></td>
+                                <td>
+                                    <span class="key-status-badge ${key.is_active ? 'active' : 'inactive'}">
+                                        ${key.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                </td>
+                                <td>${this.formatDate(key.created_at)}</td>
+                                <td>${key.expires_at ? this.formatDate(key.expires_at) : 'Never'}</td>
+                                <td>${key.usage_count || 0}</td>
+                                <td class="actions-cell">
+                                    <button class="btn-icon" onclick="apiKeysPage.toggleApiKey('${key.id}')" title="${key.is_active ? 'Deactivate' : 'Activate'}">
+                                        <i class="fas fa-${key.is_active ? 'pause' : 'play'}"></i>
+                                    </button>
+                                    <button class="btn-icon btn-icon-danger" onclick="apiKeysPage.deleteApiKey('${key.id}')" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
             </div>
         `;
+        
+        // Add table styles if not already present
+        if (!document.getElementById('api-keys-table-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'api-keys-table-styles';
+            styles.textContent = `
+                .api-keys-table-wrapper {
+                    overflow-x: auto;
+                }
+                .api-keys-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 14px;
+                }
+                .api-keys-table th,
+                .api-keys-table td {
+                    padding: 12px 16px;
+                    text-align: left;
+                    border-bottom: 1px solid var(--border-primary, #e5e7eb);
+                }
+                .api-keys-table th {
+                    background: var(--bg-secondary, #f9fafb);
+                    font-weight: 600;
+                    color: var(--text-secondary, #6b7280);
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .api-keys-table tbody tr:hover {
+                    background: var(--bg-hover, #f3f4f6);
+                }
+                .key-name-cell {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+                .key-name-cell strong {
+                    color: var(--text-primary, #111827);
+                }
+                .key-desc {
+                    font-size: 12px;
+                    color: var(--text-muted, #9ca3af);
+                }
+                .key-prefix {
+                    font-family: 'Courier New', monospace;
+                    font-size: 13px;
+                    background: var(--bg-secondary, #f3f4f6);
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                }
+                .key-status-badge {
+                    display: inline-block;
+                    padding: 4px 10px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 500;
+                }
+                .key-status-badge.active {
+                    background: #d1fae5;
+                    color: #065f46;
+                }
+                .key-status-badge.inactive {
+                    background: #fee2e2;
+                    color: #991b1b;
+                }
+                [data-theme="dark"] .key-status-badge.active {
+                    background: #064e3b;
+                    color: #6ee7b7;
+                }
+                [data-theme="dark"] .key-status-badge.inactive {
+                    background: #7f1d1d;
+                    color: #fca5a5;
+                }
+                .actions-cell {
+                    display: flex;
+                    gap: 8px;
+                }
+                .btn-icon {
+                    width: 32px;
+                    height: 32px;
+                    border: none;
+                    border-radius: 6px;
+                    background: var(--bg-secondary, #f3f4f6);
+                    color: var(--text-secondary, #6b7280);
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.15s ease;
+                }
+                .btn-icon:hover {
+                    background: var(--bg-hover, #e5e7eb);
+                    color: var(--text-primary, #374151);
+                }
+                .btn-icon-danger:hover {
+                    background: #fee2e2;
+                    color: #dc2626;
+                }
+                [data-theme="dark"] .btn-icon-danger:hover {
+                    background: #7f1d1d;
+                    color: #fca5a5;
+                }
+            `;
+            document.head.appendChild(styles);
+        }
     }
 
     async loadStats() {
