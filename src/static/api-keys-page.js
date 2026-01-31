@@ -198,9 +198,7 @@ class ApiKeysPage {
                             <div class="key-detail">
                                 <strong>Key:</strong> 
                                 <code class="api-key-value">${key.key_prefix}...</code>
-                                <button class="copy-btn" onclick="apiKeysPage.copyApiKey('${key.id}')">
-                                    <i class="fas fa-copy"></i>
-                                </button>
+                                <span class="key-hint" title="Full key only shown at creation">(hidden)</span>
                             </div>
                             <div class="key-detail">
                                 <strong>Created:</strong> ${this.formatDate(key.created_at)}
@@ -315,6 +313,13 @@ class ApiKeysPage {
 
     async createApiKey() {
         const form = document.getElementById('create-api-key-form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        // Prevent double-clicks
+        if (submitBtn.disabled) return;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+        
         const formData = new FormData(form);
         
         const scopes = Array.from(form.querySelectorAll('input[name="scopes"]:checked'))
@@ -342,21 +347,180 @@ class ApiKeysPage {
                 throw new Error(error.detail || 'Failed to create API key');
             }
 
-            const newApiKey = await response.json();
-            this.showSuccess(`API key "${newApiKey.name}" created successfully!`);
-            // Load API keys and stats
-            console.log('About to load API keys and stats...');
+            const result = await response.json();
+            
+            // Close the create modal
+            this.hideCreateApiKeyModal();
+            
+            // Show the newly created key in a special dialog
+            // The full key is only shown ONCE - user must copy it now!
+            this.showNewKeyDialog(result.api_key, result.key_info || result);
+            
+            // Reload the keys list and stats
             await Promise.all([this.loadApiKeys(), this.loadStats()]);
-            console.log('API keys and stats loading completed.');
         } catch (error) {
             console.error('Error creating API key:', error);
             this.showError(error.message);
+        } finally {
+            // Re-enable the submit button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-plus"></i> Create API Key';
         }
     }
+    
+    showNewKeyDialog(fullKey, keyInfo) {
+        // Store the full key temporarily for copying
+        this.newlyCreatedKey = fullKey;
+        
+        // Create and show the new key dialog
+        let dialog = document.getElementById('new-key-dialog');
+        if (!dialog) {
+            dialog = document.createElement('div');
+            dialog.id = 'new-key-dialog';
+            dialog.className = 'modal';
+            document.body.appendChild(dialog);
+        }
+        
+        dialog.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-check-circle" style="color: #10b981;"></i> API Key Created!</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="new-key-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Important:</strong> Copy your API key now. You won't be able to see it again!
+                    </div>
+                    <div class="form-group">
+                        <label>Your API Key</label>
+                        <div class="new-key-display">
+                            <code id="new-key-value">${this.escapeHtml(fullKey)}</code>
+                            <button class="btn btn-primary copy-new-key-btn" onclick="apiKeysPage.copyNewKey()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="key-details-summary">
+                        <p><strong>Name:</strong> ${this.escapeHtml(keyInfo.name)}</p>
+                        ${keyInfo.expires_at ? `<p><strong>Expires:</strong> ${this.formatDate(keyInfo.expires_at)}</p>` : '<p><strong>Expires:</strong> Never</p>'}
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" onclick="apiKeysPage.closeNewKeyDialog()">
+                            I've copied the key
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        dialog.style.display = 'block';
+        
+        // Add styles for the new key dialog if not already present
+        if (!document.getElementById('new-key-dialog-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'new-key-dialog-styles';
+            styles.textContent = `
+                .new-key-warning {
+                    background: #fef3c7;
+                    border: 1px solid #f59e0b;
+                    border-radius: 8px;
+                    padding: 12px 16px;
+                    margin-bottom: 20px;
+                    color: #92400e;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .new-key-warning i {
+                    color: #f59e0b;
+                    font-size: 1.2em;
+                }
+                [data-theme="dark"] .new-key-warning {
+                    background: #451a03;
+                    border-color: #b45309;
+                    color: #fcd34d;
+                }
+                .new-key-display {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    background: var(--bg-secondary, #f3f4f6);
+                    border: 1px solid var(--border-primary, #e5e7eb);
+                    border-radius: 8px;
+                    padding: 12px;
+                }
+                .new-key-display code {
+                    flex: 1;
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                    word-break: break-all;
+                    background: transparent;
+                    padding: 0;
+                }
+                .copy-new-key-btn {
+                    white-space: nowrap;
+                }
+                .key-details-summary {
+                    margin: 16px 0;
+                    padding: 12px;
+                    background: var(--bg-secondary, #f9fafb);
+                    border-radius: 8px;
+                }
+                .key-details-summary p {
+                    margin: 4px 0;
+                }
+                .key-hint {
+                    color: var(--text-muted, #9ca3af);
+                    font-size: 0.85em;
+                    font-style: italic;
+                    margin-left: 4px;
+                }
+                .btn-success {
+                    background: #10b981 !important;
+                    border-color: #10b981 !important;
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+    }
+    
+    copyNewKey() {
+        if (!this.newlyCreatedKey) return;
+        
+        navigator.clipboard.writeText(this.newlyCreatedKey).then(() => {
+            const btn = document.querySelector('.copy-new-key-btn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    btn.classList.remove('btn-success');
+                }, 2000);
+            }
+            this.showSuccess('API key copied to clipboard!');
+        }).catch(() => {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = this.newlyCreatedKey;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showSuccess('API key copied to clipboard!');
+        });
+    }
+    
+    closeNewKeyDialog() {
+        const dialog = document.getElementById('new-key-dialog');
+        if (dialog) {
+            dialog.style.display = 'none';
+        }
+        this.newlyCreatedKey = null; // Clear the key from memory
+    }
     async copyApiKey(keyId) {
-        // In a real implementation, you'd fetch the full key
-        // For now, just show a message
-        this.showSuccess('API key copied to clipboard!');
+        // The full key is only available at creation time
+        // Show a message explaining this security feature
+        this.showError('API keys can only be copied when first created. For security, the full key is not stored.');
     }
 
     async toggleApiKey(keyId) {
