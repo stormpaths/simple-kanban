@@ -141,6 +141,8 @@ The following secrets are managed:
 - `OAUTH2_CLIENT_SECRET`: OAuth2 integration
 - `API_KEY`: External API access
 
+These secrets must remain stable across redeploys. The Helm chart reuses existing `JWT_SECRET_KEY` and `SESSION_SECRET_KEY` from the in-cluster Secret (once created) so user sessions are not invalidated on every deploy.
+
 ## Team Collaboration
 
 ### Share GPG Public Key

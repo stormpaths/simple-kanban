@@ -1,0 +1,53 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: simple-kanban-db
+# NOTE: PostgreSQL is now managed by CNPG - see infra/kubernetes/cnpg/clusters/
+# This file now only manages Redis deployments
+deploy:
+  helm:
+    releases:
+    - name: simple-kanban-redis-dev
+      chartPath: infra/kubernetes/charts/redis-cache
+      namespace: apps-dev
+      setValues:
+        auth.enabled: true
+        auth.existingSecret: simple-kanban-redis-dev-secret
+        auth.existingSecretPasswordKey: redis-password
+        persistence.enabled: false
+profiles:
+- name: dev
+  deploy:
+    helm:
+      releases:
+      # PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-dev.yaml
+      - name: simple-kanban-redis-dev
+        chartPath: infra/kubernetes/charts/redis-cache
+        namespace: apps-dev
+        setValues:
+          auth.enabled: true
+          auth.existingSecret: simple-kanban-redis-dev-secret
+          auth.existingSecretPasswordKey: redis-password
+          persistence.enabled: false
+- name: prod
+  deploy:
+    helm:
+      releases:
+      # PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-prod.yaml
+      - name: simple-kanban-redis
+        chartPath: infra/kubernetes/charts/redis-cache
+        namespace: apps
+        setValues:
+          auth.enabled: true
+          auth.existingSecret: simple-kanban-redis-secret
+          auth.existingSecretPasswordKey: redis-password
+          persistence.enabled: false
+portForward:
+- resourceType: service
+  resourceName: simple-kanban-postgres-dev-rw
+  port: 5432
+  localPort: 5432
+- resourceType: service
+  resourceName: simple-kanban-redis-dev-master
+  port: 6379
+  localPort: 6379

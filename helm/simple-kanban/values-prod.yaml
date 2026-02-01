@@ -1,8 +1,10 @@
 # Production environment overrides
-replicaCount: 3
+replicaCount: 1
 
 image:
-  pullPolicy: IfNotPresent
+  repository: registry.stormpath.net/simple-kanban
+  # tag: "latest"  # Let skaffold manage the tag dynamically
+  pullPolicy: Always
 
 resources:
   limits:
@@ -12,9 +14,9 @@ resources:
     cpu: 500m
     memory: 512Mi
 
-# Enable autoscaling in production
+# Disable autoscaling for troubleshooting
 autoscaling:
-  enabled: true
+  enabled: false
   minReplicas: 3
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
@@ -27,14 +29,14 @@ ingress:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts:
-    - host: simple-kanban.example.com
+    - host: kanban.stormpath.net
       paths:
         - path: /
           pathType: Prefix
   tls:
-    - secretName: simple-kanban-tls
+    - secretName: stormpath-wildcard-tls
       hosts:
-        - simple-kanban.example.com
+        - kanban.stormpath.net
 
 # Production environment variables
 env:
@@ -42,8 +44,12 @@ env:
     value: "production"
   - name: LOG_LEVEL
     value: "INFO"
+  - name: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    value: "10080"
   - name: WORKERS
     value: "4"
+  - name: BASE_URL
+    value: "https://kanban.stormpath.net"
 
 # Strict security for production
 podSecurityContext:
@@ -81,17 +87,21 @@ readinessProbe:
   failureThreshold: 3
 
 # Database and cache configuration for production
+# PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-prod.yaml
 storage:
   postgres:
-    hostname: simple-kanban-postgres
+    hostname: simple-kanban-postgres-rw
     username: kanban
     database: simple_kanban
-    credentialsSecret: simple-kanban-postgres-secret
-    adminPasswordKey: postgres-password
+    existingSecret: simple-kanban-cnpg-secret
     userPasswordKey: password
 
 cache:
   redis:
     hostname: simple-kanban-redis-master
-    credentialsSecret: simple-kanban-redis-secret
+    existingSecret: simple-kanban-redis-secret
     passwordKey: redis-password
+
+# OIDC configuration
+oidc:
+  googleOAuthSecret: google-oauth-json

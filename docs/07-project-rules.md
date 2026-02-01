@@ -76,8 +76,8 @@ simple-kanban/
 ├── alembic.ini                   # Database migration config
 ├── pyproject.toml                # Python dependencies & config
 ├── Dockerfile                    # Container build
-├── docker-compose.yml            # Local development
-├── skaffold.yaml                 # Development workflow
+├── skaffold.yaml                 # Development workflow (primary)
+├── docker-compose.monitoring.yml # Optional monitoring stack
 ├── Makefile                      # Build automation
 ├── .gitignore
 ├── .dockerignore
@@ -292,6 +292,28 @@ async def test_create_task_invalid_column(db_session, sample_project):
 - **Authentication**: Document auth requirements
 
 ## Deployment Rules
+
+### Deployment Commands
+```bash
+# Development deployment (primary method)
+skaffold run -p dev
+
+# Database only deployment
+skaffold run -f skaffold-db-only.yaml -p dev
+
+# Production deployment
+skaffold run -p prod
+```
+
+### Kubernetes Configuration
+- **Namespace**: `apps-dev` (dev), `apps-prod` (prod)
+- **Service**: `simple-kanban-dev` / `simple-kanban-prod`
+- **URL**: https://kanban.stormpath.dev (dev)
+
+### API Authentication
+Supports both header formats:
+- `Authorization: Bearer sk_...` (standard Bearer token)
+- `X-API-Key: sk_...` (common convention)
 
 ### Environment Configuration
 - **Environment variables**: All configuration via env vars

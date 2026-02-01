@@ -4,6 +4,14 @@ description: Standard project templates and patterns
 
 # Project Templates
 
+## Container Registry Standards
+
+All container images should be built and tagged consistently:
+- Use `registry.stormpath.net/[project-name]` as image repository
+- Use semantic versioning for production releases
+- Include git commit hash for development builds
+- Follow naming convention: `registry.stormpath.net/[project-name]:[version]`
+
 ## Container-First Development Standards
 
 All projects must follow these containerization principles:
@@ -70,29 +78,20 @@ fix-ruff:       # Auto-fix with Ruff
 ### Skaffold Configuration Standards
 
 #### Database and Cache Integration
-Applications requiring PostgreSQL and Redis should deploy them as part of the application stack using Bitnami Helm charts:
+Applications requiring PostgreSQL and Redis should deploy Redis as part of the application stack and use CloudNativePG (CNPG) for PostgreSQL.
 
 ```yaml
 deploy:
   helm:
     releases:
-    - name: app-postgres
-      remoteChart: bitnami/postgresql
-      version: "16.7.11"
-      setValues:
-        auth.postgresPassword: ${POSTGRES_PASSWORD:-dev-password}
-        auth.username: ${DB_USER:-appuser}
-        auth.password: ${DB_PASSWORD:-dev-password}
-        auth.database: ${DB_NAME:-appdb}
-        primary.persistence.size: ${PG_STORAGE:-8Gi}
-        metrics.enabled: ${ENABLE_METRICS:-false}
+    # PostgreSQL managed by CNPG - see infra/kubernetes/cnpg/clusters/
     - name: app-redis
-      remoteChart: bitnami/redis
-      version: "21.2.3"
+      chartPath: ../../infra/kubernetes/charts/redis-cache
       setValues:
-        auth.password: ${REDIS_PASSWORD:-dev-password}
-        master.persistence.size: ${REDIS_STORAGE:-8Gi}
-        metrics.enabled: ${ENABLE_METRICS:-false}
+        auth.enabled: true
+        auth.existingSecret: app-redis-secret
+        auth.existingSecretPasswordKey: redis-password
+        persistence.enabled: false
 ```
 
 #### Environment-Specific Configuration

@@ -1,0 +1,9 @@
+# Playwright Frontend Testing Dependencies
+playwright==1.40.0
+pytest==7.4.3
+pytest-playwright==0.4.3
+pytest-asyncio==0.21.1
+python-dotenv==1.0.0
+pytest-json-report==1.5.0
+pytest-html==4.1.1
+pytest-xdist==3.5.0  # Parallel test execution

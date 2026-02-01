@@ -1,98 +1,78 @@
-apiVersion: skaffold/v4beta7
+apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: simple-kanban
 build:
   artifacts:
-  - image: simple-kanban
+  - image: registry.stormpath.net/simple-kanban
     docker:
       dockerfile: Dockerfile
   local:
-    push: false
+    push: true
 deploy:
   helm:
     releases:
-    - name: simple-kanban-postgres
-      remoteChart: bitnami/postgresql
-      version: "16.7.11"
-      setValues:
-        auth.postgresPassword: kanban
-        auth.username: kanban
-        auth.password: kanban
-        auth.database: simple_kanban
-        primary.persistence.size: 8Gi
-    - name: simple-kanban-redis
-      remoteChart: bitnami/redis
-      version: "21.2.3"
-      setValues:
-        auth.password: kanban
-        master.persistence.size: 8Gi
-    - name: simple-kanban
+    - name: simple-kanban-dev
       chartPath: helm/simple-kanban
+      namespace: apps-dev
       valuesFiles:
       - helm/simple-kanban/values-dev.yaml
-      setValues:
-        image.repository: simple-kanban
-        image.tag: simple-kanban
 portForward:
 - resourceType: service
-  resourceName: simple-kanban
+  resourceName: simple-kanban-dev
   port: 8000
   localPort: 8000
-- resourceType: service
-  resourceName: simple-kanban-postgres
-  port: 5432
-  localPort: 5432
-- resourceType: service
-  resourceName: simple-kanban-redis-master
-  port: 6379
-  localPort: 6379
 profiles:
+- name: local
+  activation:
+    - command: dev
+  deploy:
+    helm:
+      releases:
+      - name: simple-kanban-local
+        chartPath: helm/simple-kanban
+        namespace: default
+        valuesFiles:
+        - helm/simple-kanban/values-local.yaml
+  portForward:
+  - resourceType: service
+    resourceName: simple-kanban-local
+    port: 80
+    localPort: 8000
 - name: dev
   deploy:
     helm:
       releases:
-      - name: simple-kanban-postgres
-        remoteChart: bitnami/postgresql
-        version: "16.7.11"
-        setValues:
-          auth.postgresPassword: kanban
-          auth.username: kanban
-          auth.password: kanban
-          auth.database: simple_kanban
-          primary.persistence.size: 8Gi
-      - name: simple-kanban-redis
-        remoteChart: bitnami/redis
-        version: "21.2.3"
-        setValues:
-          auth.password: kanban
-          master.persistence.size: 8Gi
-      - name: simple-kanban
+      - name: simple-kanban-dev
         chartPath: helm/simple-kanban
+        namespace: apps-dev
         valuesFiles:
         - helm/simple-kanban/values-dev.yaml
+      hooks:
+        after:
+        - host:
+            command: ["./scripts/post-deploy-test.sh", "dev", "full", "soft"]
+            os: [darwin, linux]
 - name: prod
   deploy:
     helm:
       releases:
-      - name: simple-kanban-postgres
-        remoteChart: bitnami/postgresql
-        version: "16.7.11"
-        setValues:
-          auth.postgresPassword: ${POSTGRES_PASSWORD}
-          auth.username: kanban
-          auth.password: ${POSTGRES_USER_PASSWORD}
-          auth.database: simple_kanban
-          primary.persistence.size: 100Gi
-          metrics.enabled: true
-      - name: simple-kanban-redis
-        remoteChart: bitnami/redis
-        version: "21.2.3"
-        setValues:
-          auth.password: ${REDIS_PASSWORD}
-          master.persistence.size: 20Gi
-          metrics.enabled: true
       - name: simple-kanban
         chartPath: helm/simple-kanban
+        namespace: apps
         valuesFiles:
         - helm/simple-kanban/values-prod.yaml
+      hooks:
+        after:
+        - host:
+            command: ["./scripts/post-deploy-test.sh", "prod", "full", "hard"]
+            os: [darwin, linux]
+- name: feature
+  deploy:
+    helm:
+      releases:
+      - name: simple-kanban-dev
+        chartPath: helm/simple-kanban
+        namespace: apps-dev
+        valuesFiles:
+        - helm/simple-kanban/values-dev.yaml

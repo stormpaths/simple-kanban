@@ -5,7 +5,11 @@
 **Goal**: Establish backend infrastructure and basic API  
 **User Stories**: US-003, US-006, US-011
 
-## Development Story Breakdown
+## Development Stories & Task Breakdown
+
+> **Note:** This is a historical planning document from the initial project phase.
+> The project evolved to use Skaffold for all development instead of docker-compose.
+> See README.md for current development approach.
 
 ### Epic: Database Foundation
 

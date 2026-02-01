@@ -1,0 +1,76 @@
+# Local development values for simple-kanban
+# Use with: skaffold dev -p local
+
+replicaCount: 1
+
+image:
+  repository: simple-kanban
+  tag: latest
+  pullPolicy: IfNotPresent
+
+env:
+  # OpenTelemetry configuration for local development
+  OTEL_SERVICE_NAME: "simple-kanban-local"
+  OTEL_SERVICE_VERSION: "dev"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://prometheus-gateway:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_EXPORTER_OTLP_INSECURE: "true"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  # Development logging
+  LOG_LEVEL: "DEBUG"
+  SQLALCHEMY_ECHO: "True"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+# Disable ingress for local - use port-forward instead
+ingress:
+  enabled: false
+
+# Lighter resource limits for local development
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Faster health checks for local development
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 3
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 2
+
+# Security context (same as production)
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000

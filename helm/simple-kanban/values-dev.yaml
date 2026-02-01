@@ -2,8 +2,15 @@
 replicaCount: 1
 
 image:
+  repository: registry.stormpath.net/simple-kanban
   tag: "latest"
   pullPolicy: Always
+
+# Use ClusterIP with ingress
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
 
 resources:
   limits:
@@ -13,26 +20,36 @@ resources:
     cpu: 50m
     memory: 64Mi
 
-# Enable ingress for local development
+# Enable ingress for kanban.stormpath.dev
 ingress:
   enabled: true
   className: "nginx"
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: simple-kanban.local
+    - host: kanban.stormpath.dev
       paths:
         - path: /
           pathType: Prefix
+  tls:
+    - secretName: stormpath-wildcard-tls
+      hosts:
+        - kanban.stormpath.dev
 
 # Development environment variables
 env:
   - name: ENVIRONMENT
     value: "development"
+  - name: DEBUG
+    value: "true"
   - name: LOG_LEVEL
     value: "DEBUG"
+  - name: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    value: "10080"
   - name: RELOAD
     value: "true"
+  - name: BASE_URL
+    value: "https://kanban.stormpath.dev"
 
 # Relaxed security for development
 podSecurityContext:
@@ -42,14 +59,21 @@ securityContext:
   readOnlyRootFilesystem: false
 
 # Database and cache configuration for development
+# PostgreSQL now managed by CNPG - see infra/kubernetes/cnpg/clusters/simple-kanban-dev.yaml
 storage:
   postgres:
-    hostname: simple-kanban-postgres
+    hostname: simple-kanban-postgres-dev-rw
     username: kanban
     database: simple_kanban
-    password: kanban
+    existingSecret: simple-kanban-cnpg-secret-dev
+    userPasswordKey: password
 
 cache:
   redis:
-    hostname: simple-kanban-redis-master
-    password: kanban
+    hostname: simple-kanban-redis-dev-master
+    existingSecret: simple-kanban-redis-dev-secret
+    passwordKey: redis-password
+
+# OIDC configuration
+oidc:
+  googleOAuthSecret: google-oauth-json-dev

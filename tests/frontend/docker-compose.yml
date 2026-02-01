@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  frontend-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - BASE_URL=${BASE_URL:-https://kanban.stormpath.dev}
+      - TEST_USERNAME=${TEST_USERNAME:-testuser_1759977596@example.com}
+      - TEST_PASSWORD=${TEST_PASSWORD:-TestPassword123!}
+    volumes:
+      # Mount test results for viewing on host
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    # Override command for different test modes
+    command: pytest --browser chromium -v
+    # For headed mode (requires X11 forwarding)
+    # command: pytest --browser chromium --headed -v
+    # environment:
+    #   - DISPLAY=${DISPLAY}
+    # volumes:
+    #   - /tmp/.X11-unix:/tmp/.X11-unix
+
+  # Service for running specific test files
+  modal-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - BASE_URL=${BASE_URL:-https://kanban.stormpath.dev}
+      - TEST_USERNAME=${TEST_USERNAME:-testuser_1759952296@example.com}
+      - TEST_PASSWORD=${TEST_PASSWORD:-TestPassword123!}
+    volumes:
+      - ./test-results:/app/test-results
+    command: pytest test_task_modal_reusability.py --browser chromium -v
+
+  # Service for running with HTML report
+  tests-with-report:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - BASE_URL=${BASE_URL:-https://kanban.stormpath.dev}
+      - TEST_USERNAME=${TEST_USERNAME:-testuser_1759952296@example.com}
+      - TEST_PASSWORD=${TEST_PASSWORD:-TestPassword123!}
+    volumes:
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    command: >
+      sh -c "pytest --browser chromium --html=test-results/report.html --self-contained-html -v || true &&
+             echo 'Test report available at: test-results/report.html'"

@@ -1,4 +1,8 @@
-# Requirements Review - Simple Kanban Board
+# Requirements Review & Gap Analysis
+
+> **Note:** This is a historical planning document from the initial project phase.
+> Development setup now uses Skaffold instead of docker-compose.
+> See README.md for current development workflow.
 
 ## Review Criteria Assessment
 

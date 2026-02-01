@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Management - Simple Kanban Board</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        // Apply theme immediately to prevent flash
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            min-height: 100vh;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .admin-panel {
+            background: var(--backdrop-blur);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px var(--shadow-light);
+            border: 1px solid var(--border-primary);
+            min-width: 800px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-nav-left">
+                    <a href="/" class="home-btn" title="Back to Boards">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    <h1 class="app-title">
+                        <i class="fas fa-users"></i>
+                        Group Management
+                    </h1>
+                </div>
+                <div class="header-actions">
+                    <button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="user-menu">
+                        <button class="btn btn-secondary" id="user-menu-btn">
+                            <i class="fas fa-user"></i>
+                            <span id="user-name">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="user-dropdown" class="user-dropdown" style="display: none;">
+                            <a href="#" id="user-profile">
+                                <i class="fas fa-user-cog"></i>
+                                Profile
+                            </a>
+                            <a href="/static/api-keys.html" id="api-keys-menu">
+                                <i class="fas fa-key"></i>
+                                API Keys
+                            </a>
+                            <a href="/admin" id="admin-panel" style="display: none;">
+                                <i class="fas fa-users-cog"></i>
+                                Admin Panel
+                            </a>
+                            <a href="#" id="user-logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="admin-container">
+                <div class="admin-panel">
+                <!-- Groups Overview -->
+                <div class="page-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <h2>Your Groups</h2>
+                            <p class="section-description">Manage your groups and collaborate on shared boards</p>
+                        </div>
+                        <button class="btn btn-primary" id="create-group-btn">
+                            <i class="fas fa-plus"></i>
+                            Create Group
+                        </button>
+                    </div>
+
+                    <div id="groups-container" class="groups-container">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading groups...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group Details Section (Hidden by default) -->
+                <div id="group-details-section" class="page-section" style="display: none;">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <h2 id="group-details-title">Group Details</h2>
+                            <p id="group-details-description" class="section-description"></p>
+                        </div>
+                        <div class="section-actions">
+                            <button class="btn btn-secondary" id="edit-group-btn">
+                                <i class="fas fa-edit"></i>
+                                Edit Group
+                            </button>
+                            <button class="btn btn-danger" id="delete-group-btn">
+                                <i class="fas fa-trash"></i>
+                                Delete Group
+                            </button>
+                            <button class="btn btn-success" id="create-group-board-btn">
+                                <i class="fas fa-plus"></i>
+                                Create Board
+                            </button>
+                            <button class="btn btn-outline" id="back-to-groups-btn">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Groups
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="group-details-content">
+                        <!-- Group Info -->
+                        <div class="group-info-card">
+                            <h3>Group Information</h3>
+                            <div class="group-stats">
+                                <div class="stat-item">
+                                    <i class="fas fa-users"></i>
+                                    <span id="member-count">0</span> members
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-calendar"></i>
+                                    Created <span id="group-created"></span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-user-crown"></i>
+                                    Your role: <span id="user-role" class="role-badge"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Group Members -->
+                        <div class="group-members-card">
+                            <div class="card-header">
+                                <h3>Members</h3>
+                                <button class="btn btn-sm btn-primary" id="invite-member-btn" onclick="console.log('Button clicked!'); if(window.groupsPage) { window.groupsPage.showInviteMemberModal(); } else { console.error('groupsPage not found'); }">
+                                    <i class="fas fa-user-plus"></i>
+                                    Invite Member
+                                </button>
+                            </div>
+                            <div id="members-list" class="members-grid"></div>
+                        </div>
+
+                        <!-- Group Boards -->
+                        <div class="group-boards-card">
+                            <div class="card-header">
+                                <h3>Group Boards</h3>
+                            </div>
+                            <div id="group-boards-list" class="boards-grid">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    Loading boards...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Create Group Modal -->
+        <div id="create-group-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create New Group</h3>
+                    <button class="modal-close" id="create-group-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-group-form">
+                        <div class="form-group">
+                            <label for="group-name">Group Name</label>
+                            <input type="text" id="group-name" name="name" required 
+                                   placeholder="Enter group name" maxlength="255">
+                        </div>
+                        <div class="form-group">
+                            <label for="group-description">Description (Optional)</label>
+                            <textarea id="group-description" name="description" 
+                                      placeholder="Describe the purpose of this group" 
+                                      maxlength="1000" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-create-group">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Create Group
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Group Modal -->
+        <div id="edit-group-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Edit Group</h3>
+                    <button class="modal-close" id="edit-group-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-group-form">
+                        <div class="form-group">
+                            <label for="edit-group-name">Group Name</label>
+                            <input type="text" id="edit-group-name" name="name" required 
+                                   placeholder="Enter group name" maxlength="255">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-group-description">Description (Optional)</label>
+                            <textarea id="edit-group-description" name="description" 
+                                      placeholder="Describe the purpose of this group" 
+                                      maxlength="1000" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit-group">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invite Member Modal -->
+        <div id="invite-member-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Invite Member to Group</h3>
+                    <button class="modal-close" id="invite-member-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="invite-member-form">
+                        <div class="form-group">
+                            <label for="member-email">User Email or ID</label>
+                            <input type="text" id="member-email" name="email" required 
+                                   placeholder="Enter user email or user ID">
+                            <small class="form-help">Enter the email address or user ID of the person you want to invite</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="member-role">Role</label>
+                            <select id="member-role" name="role" required>
+                                <option value="member">Member - Can view and edit group boards</option>
+                                <option value="admin">Admin - Can manage members and settings</option>
+                            </select>
+                            <small class="form-help">Admins can invite and remove members</small>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-invite-member">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i>
+                                Invite Member
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification System -->
+        <div id="notification" class="notification">
+            <span id="notification-message"></span>
+            <button id="notification-close" class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/theme.js"></script>
+    <script src="/static/auth.js"></script>
+    <script src="/static/groups-page.js"></script>
+</body>
+</html>

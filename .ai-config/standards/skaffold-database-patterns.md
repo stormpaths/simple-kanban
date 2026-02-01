@@ -6,53 +6,30 @@ description: Skaffold database and cache deployment patterns
 
 ## Overview
 
-Standard patterns for deploying PostgreSQL and Redis alongside applications using Skaffold and Bitnami Helm charts.
+Standard patterns for deploying PostgreSQL and Redis alongside applications using Skaffold.
 
 ## PostgreSQL Integration
 
 ### Basic Configuration
 ```yaml
-- name: app-postgres
-  remoteChart: bitnami/postgresql
-  version: "16.7.11"
-  setValues:
-    auth.postgresPassword: ${POSTGRES_PASSWORD:-dev-password}
-    auth.username: ${DB_USER:-appuser}
-    auth.password: ${DB_PASSWORD:-dev-password}
-    auth.database: ${DB_NAME:-appdb}
-    primary.persistence.size: ${PG_STORAGE:-8Gi}
-    metrics.enabled: ${ENABLE_METRICS:-false}
+# PostgreSQL is managed by CloudNativePG (CNPG) via manifests
+# See: infra/kubernetes/cnpg/clusters/
 ```
 
 ### Environment-Specific Values
 
 #### Development
 ```yaml
-setValues:
-  auth.postgresPassword: simple-dev-password
-  auth.username: appuser
-  auth.password: simple-dev-password
-  auth.database: appdb
-  primary.persistence.size: 8Gi
-  metrics.enabled: false
+# Use the CNPG cluster in your target namespace
+# - {cluster-name}-rw service for writes
+# - {cluster-name}-ro service for reads
 ```
 
 #### Production
 ```yaml
-setValues:
-  auth.postgresPassword: ${POSTGRES_PASSWORD}
-  auth.username: ${DB_USER}
-  auth.password: ${DB_PASSWORD}
-  auth.database: ${DB_NAME}
-  primary.persistence.size: 100Gi
-  metrics.enabled: true
-  primary.resources:
-    limits:
-      cpu: 2000m
-      memory: 4Gi
-    requests:
-      cpu: 1000m
-      memory: 2Gi
+# Use the CNPG cluster in your target namespace
+# - {cluster-name}-rw service for writes
+# - credentials stored in a CNPG-format secret (username/password keys)
 ```
 
 ## Redis Integration
@@ -60,12 +37,12 @@ setValues:
 ### Basic Configuration
 ```yaml
 - name: app-redis
-  remoteChart: bitnami/redis
-  version: "21.2.3"
+  chartPath: ../../infra/kubernetes/charts/redis-cache
   setValues:
-    auth.password: ${REDIS_PASSWORD:-dev-password}
-    master.persistence.size: ${REDIS_STORAGE:-8Gi}
-    metrics.enabled: ${ENABLE_METRICS:-false}
+    auth.enabled: true
+    auth.existingSecret: app-redis-secret
+    auth.existingSecretPasswordKey: redis-password
+    persistence.enabled: false
 ```
 
 ### Environment-Specific Values
@@ -110,21 +87,13 @@ build:
 deploy:
   helm:
     releases:
-    - name: example-app-postgres
-      remoteChart: bitnami/postgresql
-      version: "13.2.24"
-      setValues:
-        auth.postgresPassword: dev-password
-        auth.username: appuser
-        auth.password: dev-password
-        auth.database: appdb
-        primary.persistence.size: 8Gi
     - name: example-app-redis
-      remoteChart: bitnami/redis
-      version: "18.19.4"
+      chartPath: ../../infra/kubernetes/charts/redis-cache
       setValues:
-        auth.password: dev-password
-        master.persistence.size: 8Gi
+        auth.enabled: true
+        auth.existingSecret: example-app-redis-secret
+        auth.existingSecretPasswordKey: redis-password
+        persistence.enabled: false
     - name: example-app
       chartPath: helm/example-app
       valuesFiles:
@@ -138,10 +107,6 @@ portForward:
   port: 8000
   localPort: 8000
 - resourceType: service
-  resourceName: example-app-postgres
-  port: 5432
-  localPort: 5432
-- resourceType: service
   resourceName: example-app-redis-master
   port: 6379
   localPort: 6379
@@ -150,21 +115,13 @@ profiles:
   deploy:
     helm:
       releases:
-      - name: example-app-postgres
-        remoteChart: bitnami/postgresql
-        version: "13.2.24"
-        setValues:
-          auth.postgresPassword: dev-password
-          auth.username: appuser
-          auth.password: dev-password
-          auth.database: appdb
-          primary.persistence.size: 8Gi
       - name: example-app-redis
-        remoteChart: bitnami/redis
-        version: "18.19.4"
+        chartPath: ../../infra/kubernetes/charts/redis-cache
         setValues:
-          auth.password: dev-password
-          master.persistence.size: 8Gi
+          auth.enabled: true
+          auth.existingSecret: example-app-redis-secret
+          auth.existingSecretPasswordKey: redis-password
+          persistence.enabled: false
       - name: example-app
         chartPath: helm/example-app
         valuesFiles:
@@ -173,23 +130,13 @@ profiles:
   deploy:
     helm:
       releases:
-      - name: example-app-postgres
-        remoteChart: bitnami/postgresql
-        version: "13.2.24"
-        setValues:
-          auth.postgresPassword: ${POSTGRES_PASSWORD}
-          auth.username: ${DB_USER}
-          auth.password: ${DB_PASSWORD}
-          auth.database: ${DB_NAME}
-          primary.persistence.size: 100Gi
-          metrics.enabled: true
       - name: example-app-redis
-        remoteChart: bitnami/redis
-        version: "18.19.4"
+        chartPath: ../../infra/kubernetes/charts/redis-cache
         setValues:
-          auth.password: ${REDIS_PASSWORD}
-          master.persistence.size: 20Gi
-          metrics.enabled: true
+          auth.enabled: true
+          auth.existingSecret: example-app-redis-secret
+          auth.existingSecretPasswordKey: redis-password
+          persistence.enabled: false
       - name: example-app
         chartPath: helm/example-app
         valuesFiles:
@@ -219,11 +166,10 @@ cache:
 ```yaml
 storage:
   postgres:
-    hostname: example-app-postgres
+    hostname: example-app-postgres-rw
     username: appuser
     database: appdb
-    credentialsSecret: example-app-postgres-secret
-    adminPasswordKey: postgres-password
+    credentialsSecret: example-app-cnpg-secret
     userPasswordKey: password
 
 cache:
