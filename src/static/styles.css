@@ -859,7 +859,6 @@ body {
     display: flex;
     gap: 1.5rem;
     min-height: 500px;
-    overflow-x: auto;
     padding-bottom: 1rem;
 }
 
