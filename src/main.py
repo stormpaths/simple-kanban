@@ -25,6 +25,7 @@ import os
 from .database import create_tables
 from .migrations.group_migration import run_group_migrations
 from .migrations.task_fields_migration import run_task_fields_migration
+from .migrations.session_migration import run_sessions_migration
 from .api import (
     boards,
     columns,
@@ -129,6 +130,10 @@ async def startup_event():
     logger.info("Running task fields migrations...")
     run_task_fields_migration()
     logger.info("Task fields migrations completed")
+
+    logger.info("Running sessions migrations...")
+    run_sessions_migration()
+    logger.info("Sessions migrations completed")
 
 
 @app.get("/")

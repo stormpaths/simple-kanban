@@ -14,6 +14,7 @@ from ..database import get_db_session
 from ..models.user import User
 from ..models.api_key import ApiKey
 from .jwt_handler import jwt_handler
+from . import session_service
 
 # HTTP Bearer token scheme (auto_error=False to make it optional)
 security = HTTPBearer(auto_error=False)
@@ -28,6 +29,7 @@ async def get_current_user(
     Get the current authenticated user from JWT token or cookie.
 
     Supports both Bearer token authentication and cookie-based authentication.
+    First checks database for persistent sessions, then falls back to JWT validation.
     Raises HTTPException if no valid authentication found.
     """
     credentials_exception = HTTPException(
@@ -37,27 +39,24 @@ async def get_current_user(
     )
 
     user = None
+    token = None
 
-    # Try Bearer token authentication first
+    # Get token from Bearer header or cookie
     if credentials:
-        token_data = jwt_handler.verify_token(credentials.credentials)
-        if token_data:
-            from sqlalchemy import select
+        token = credentials.credentials
+    else:
+        token = request.cookies.get("access_token")
 
-            result = await db.execute(select(User).where(User.id == token_data.user_id))
-            user = result.scalar_one_or_none()
-
-    # Try cookie authentication if Bearer token failed
-    if not user:
-        access_token = request.cookies.get("access_token")
-        if access_token:
-            token_data = jwt_handler.verify_token(access_token)
+    if token:
+        # First, try database session validation (survives deployments)
+        session_result = await session_service.validate_session(db, token)
+        if session_result:
+            _, user = session_result
+        else:
+            # Fall back to JWT validation (for new tokens not yet in DB)
+            token_data = jwt_handler.verify_token(token)
             if token_data:
-                from sqlalchemy import select
-
-                result = await db.execute(
-                    select(User).where(User.id == token_data.user_id)
-                )
+                result = await db.execute(select(User).where(User.id == token_data.user_id))
                 user = result.scalar_one_or_none()
 
     if user is None:

@@ -20,6 +20,7 @@ from ..schemas import (
     MessageResponse,
 )
 from ..auth.dependencies import get_current_user, get_current_admin_user, get_user_from_api_key_or_jwt
+from ..auth import session_service
 from ..utils.error_handler import (
     handle_auth_error,
     handle_validation_error,
@@ -85,12 +86,15 @@ async def register_user(
 
 @router.post("/login")
 async def login_user(
-    user_credentials: UserLogin, db: AsyncSession = Depends(get_db_session)
+    request: Request,
+    user_credentials: UserLogin,
+    db: AsyncSession = Depends(get_db_session)
 ) -> Any:
     """
     Authenticate user and return JWT token.
 
     Accepts username or email with password.
+    Creates a persistent session in the database.
     """
     try:
         # Try to find user by username or email
@@ -114,13 +118,51 @@ async def login_user(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not active"
             )
 
-        # Create and return JWT token
-        return jwt_handler.create_token_response(user.id, user.username)
+        # Create JWT token
+        token_response = jwt_handler.create_token_response(user.id, user.username)
+        
+        # Store session in database for persistence across deployments
+        user_agent = request.headers.get("user-agent", "")[:512]
+        ip_address = request.client.host if request.client else None
+        await session_service.create_session(
+            db=db,
+            user_id=user.id,
+            token=token_response["access_token"],
+            user_agent=user_agent,
+            ip_address=ip_address,
+        )
+        
+        return token_response
 
     except HTTPException:
         raise
     except Exception as e:
         handle_auth_error(e, "user login", username=user_credentials.username)
+
+
+@router.post("/logout")
+async def logout_user(
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """
+    Logout user and invalidate session.
+    
+    Removes the session from the database.
+    """
+    token = None
+    
+    # Get token from header or cookie
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    else:
+        token = request.cookies.get("access_token")
+    
+    if token:
+        await session_service.delete_session(db, token)
+    
+    return {"message": "Logged out successfully"}
 
 
 @router.get("/me", response_model=UserResponse)

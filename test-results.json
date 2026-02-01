@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-01-31T15:09:15-08:00",
-  "duration": 0,
+  "timestamp": "2026-01-31T15:55:34-08:00",
+  "duration": 1,
   "mode": "full",
   "backend": {
     "summary": {
@@ -14,7 +14,7 @@
       "❌ Health Check - HTTP 000"
 ,
       "✅ API Key Verification - Key accessible",
-      "❌ Comprehensive Authentication System - Failed (0s)"
+      "❌ Comprehensive Authentication System - Failed (1s)"
     ]
   },
   "frontend": {

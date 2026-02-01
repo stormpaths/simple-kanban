@@ -11,6 +11,7 @@ from .board import Board
 from .column import Column
 from .task import Task
 from .task_comment import TaskComment
+from .session import Session
 
 # Import all models to ensure they're registered with SQLAlchemy
 __all__ = [
@@ -27,4 +28,5 @@ __all__ = [
     "Column",
     "Task",
     "TaskComment",
+    "Session",
 ]
