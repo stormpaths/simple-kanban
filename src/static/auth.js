@@ -106,7 +106,13 @@ class AuthManager {
         this.showAuthScreen();
     }
 
+    hideAuthLoading() {
+        const loading = document.getElementById('auth-loading');
+        if (loading) loading.style.display = 'none';
+    }
+
     showAuthScreen() {
+        this.hideAuthLoading();
         const authScreen = document.getElementById('auth-screen');
         const mainApp = document.getElementById('main-app');
         if (authScreen) authScreen.style.display = 'flex';
@@ -114,6 +120,7 @@ class AuthManager {
     }
 
     showMainApp() {
+        this.hideAuthLoading();
         const authScreen = document.getElementById('auth-screen');
         const mainApp = document.getElementById('main-app');
         if (authScreen) authScreen.style.display = 'none';

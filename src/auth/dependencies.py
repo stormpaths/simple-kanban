@@ -353,9 +353,10 @@ async def get_user_from_api_key_or_jwt(
     """
     Authenticate user using either API key or JWT token.
 
-    Supports both authentication methods:
-    1. API key (Bearer sk_...)
-    2. JWT token (Bearer jwt_token or cookie)
+    Supports multiple authentication methods:
+    1. API key via X-API-Key header
+    2. API key via Authorization: Bearer sk_...
+    3. JWT token via Authorization: Bearer or cookie
 
     Args:
         request: FastAPI request object
@@ -373,21 +374,38 @@ async def get_user_from_api_key_or_jwt(
 
     logger = logging.getLogger(__name__)
 
-    logger.info(
-        f"[AUTH] Authentication attempt - credentials present: {credentials is not None}"
-    )
-    if credentials:
-        logger.info(f"[AUTH] Credential type: {credentials.credentials[:10]}...")
-
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # Try API key authentication first if credentials look like an API key
+    # Check for X-API-Key header first (common convention)
+    x_api_key = request.headers.get("X-API-Key") or request.headers.get("x-api-key")
+    if x_api_key and x_api_key.startswith("sk_"):
+        logger.info("[AUTH] Found X-API-Key header, attempting API key authentication")
+        try:
+            # Create credentials-like object for authenticate_api_key
+            class ApiKeyCredentials:
+                def __init__(self, key: str):
+                    self.credentials = key
+            
+            user, _ = await authenticate_api_key(ApiKeyCredentials(x_api_key), db, required_scope)
+            logger.info(f"[AUTH] X-API-Key authentication successful for user: {user.username}")
+            return user
+        except HTTPException as e:
+            logger.warning(f"[AUTH] X-API-Key authentication failed: {e.detail}")
+            raise credentials_exception
+
+    logger.info(
+        f"[AUTH] Authentication attempt - credentials present: {credentials is not None}"
+    )
+    if credentials:
+        logger.info(f"[AUTH] Credential type: {credentials.credentials[:10]}...")
+
+    # Try API key authentication if credentials look like an API key
     if credentials and credentials.credentials.startswith("sk_"):
-        logger.info("[AUTH] Attempting API key authentication")
+        logger.info("[AUTH] Attempting API key authentication via Bearer token")
         try:
             user, _ = await authenticate_api_key(credentials, db, required_scope)
             logger.info(

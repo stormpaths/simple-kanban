@@ -201,7 +201,13 @@ async def get_board(
                         "title": task.title,
                         "description": task.description,
                         "position": task.position,
+                        "tags": task.tags,
+                        "priority": task.priority,
+                        "steps": task.steps,
+                        "results": task.results,
+                        "task_metadata": task.task_metadata,
                         "created_at": task.created_at,
+                        "updated_at": task.updated_at,
                     }
                     for task in sorted(col.tasks, key=lambda t: t.position)
                 ],

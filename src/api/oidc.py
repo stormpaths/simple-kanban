@@ -172,7 +172,7 @@ async def oidc_callback(
                     httponly=True,
                     secure=True,
                     samesite="lax",
-                    max_age=1800,  # 30 minutes
+                    max_age=604800,  # 7 days
                 )
                 return redirect_response
 
@@ -208,7 +208,7 @@ async def oidc_callback(
                         httponly=True,
                         secure=True,
                         samesite="lax",
-                        max_age=1800,  # 30 minutes
+                        max_age=604800,  # 7 days
                     )
                     return redirect_response
 
@@ -263,7 +263,7 @@ async def oidc_callback(
                         httponly=True,
                         secure=True,
                         samesite="lax",
-                        max_age=1800,  # 30 minutes
+                        max_age=604800,  # 7 days
                     )
                     return redirect_response
         finally:

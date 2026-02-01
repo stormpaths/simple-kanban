@@ -293,6 +293,28 @@ async def test_create_task_invalid_column(db_session, sample_project):
 
 ## Deployment Rules
 
+### Deployment Commands
+```bash
+# Development deployment (primary method)
+skaffold run -p dev
+
+# Database only deployment
+skaffold run -f skaffold-db-only.yaml -p dev
+
+# Production deployment
+skaffold run -p prod
+```
+
+### Kubernetes Configuration
+- **Namespace**: `apps-dev` (dev), `apps-prod` (prod)
+- **Service**: `simple-kanban-dev` / `simple-kanban-prod`
+- **URL**: https://kanban.stormpath.dev (dev)
+
+### API Authentication
+Supports both header formats:
+- `Authorization: Bearer sk_...` (standard Bearer token)
+- `X-API-Key: sk_...` (common convention)
+
 ### Environment Configuration
 - **Environment variables**: All configuration via env vars
 - **Secrets management**: Use Kubernetes secrets

@@ -44,6 +44,8 @@ env:
     value: "true"
   - name: LOG_LEVEL
     value: "DEBUG"
+  - name: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    value: "10080"
   - name: RELOAD
     value: "true"
   - name: BASE_URL

@@ -127,7 +127,14 @@ async def update_task(
     if task_update.priority is not None:
         task.priority = task_update.priority
     if task_update.steps is not None:
-        task.steps = [s.dict() if hasattr(s, 'dict') else s for s in task_update.steps]
+        def serialize_step(s):
+            step_dict = s.dict() if hasattr(s, 'dict') else dict(s) if hasattr(s, 'items') else s
+            if isinstance(step_dict, dict) and 'completed_at' in step_dict:
+                ca = step_dict['completed_at']
+                if ca is not None and hasattr(ca, 'isoformat'):
+                    step_dict['completed_at'] = ca.isoformat()
+            return step_dict
+        task.steps = [serialize_step(s) for s in task_update.steps]
     if task_update.results is not None:
         task.results = task_update.results.dict() if hasattr(task_update.results, 'dict') else task_update.results
     if task_update.position is not None:

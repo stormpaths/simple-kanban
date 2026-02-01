@@ -592,6 +592,9 @@ class KanbanApp {
         const form = document.getElementById('task-form');
         const submitBtn = document.getElementById('task-submit');
         const detailsSection = document.getElementById('task-details-section');
+
+        modal.style.display = '';
+        modal.style.pointerEvents = '';
         
         if (task) {
             // Edit mode
@@ -628,43 +631,27 @@ class KanbanApp {
     }
     
     populateTaskDetails(task) {
-        // Tags
-        const tagsEl = document.getElementById('task-detail-tags');
-        if (task.tags && task.tags.length > 0) {
-            tagsEl.innerHTML = task.tags.map(tag => `<span class="task-tag">${this.escapeHtml(tag)}</span>`).join('');
-            tagsEl.parentElement.style.display = 'flex';
-        } else {
-            tagsEl.innerHTML = '<span class="no-data">No tags</span>';
-            tagsEl.parentElement.style.display = 'none';
-        }
+        // Store current task for editing
+        this.currentEditTask = task;
+        this.currentTags = task.tags ? [...task.tags] : [];
+        this.currentSteps = task.steps ? task.steps.map(s => ({...s})) : [];
         
-        // Priority
-        const priorityEl = document.getElementById('task-detail-priority');
-        const priority = task.priority || 'medium';
-        priorityEl.textContent = priority;
-        priorityEl.className = `task-priority priority-${priority}`;
+        // Tags (editable)
+        this.renderTagsEditor();
+        this.setupTagsEditor();
         
-        // Steps
-        const stepsEl = document.getElementById('task-detail-steps');
-        const stepsSection = document.querySelector('.detail-steps-section');
-        if (task.steps && task.steps.length > 0) {
-            const completed = task.steps.filter(s => s.completed).length;
-            stepsEl.innerHTML = `
-                <div class="steps-summary">${completed}/${task.steps.length} completed</div>
-                <ul class="steps-list">
-                    ${task.steps.map(step => `
-                        <li class="${step.completed ? 'completed' : ''}">
-                            <i class="fas fa-${step.completed ? 'check-circle' : 'circle'}"></i>
-                            ${this.escapeHtml(step.step || step.name || 'Step')}
-                            ${step.completed_at ? `<span class="step-time">${new Date(step.completed_at).toLocaleDateString()}</span>` : ''}
-                        </li>
-                    `).join('')}
-                </ul>`;
-            stepsSection.style.display = 'flex';
-        } else {
-            stepsEl.innerHTML = '';
-            stepsSection.style.display = 'none';
-        }
+        // Priority (editable dropdown) - auto-save on change
+        const prioritySelect = document.getElementById('task-priority-select');
+        prioritySelect.value = task.priority || 'medium';
+        // Remove old listener and add new one
+        const newPrioritySelect = prioritySelect.cloneNode(true);
+        prioritySelect.parentNode.replaceChild(newPrioritySelect, prioritySelect);
+        newPrioritySelect.value = task.priority || 'medium';
+        newPrioritySelect.addEventListener('change', () => this.autoSaveTask());
+        
+        // Steps (editable)
+        this.renderStepsEditor();
+        this.setupStepsEditor();
         
         // Results
         const resultsEl = document.getElementById('task-detail-results');
@@ -697,32 +684,295 @@ class KanbanApp {
         }
     }
 
+    // Tags Editor Methods
+    renderTagsEditor() {
+        const tagsList = document.getElementById('task-tags-list');
+        tagsList.innerHTML = this.currentTags.map(tag => `
+            <span class="tag-chip" data-tag="${this.escapeHtml(tag)}">
+                ${this.escapeHtml(tag)}
+                <button type="button" class="tag-remove" data-tag="${this.escapeHtml(tag)}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `).join('');
+    }
+
+    setupTagsEditor() {
+        const tagInput = document.getElementById('tag-input');
+        const suggestions = document.getElementById('tag-suggestions');
+        const tagsList = document.getElementById('task-tags-list');
+
+        // Remove existing listeners by cloning
+        const newInput = tagInput.cloneNode(true);
+        tagInput.parentNode.replaceChild(newInput, tagInput);
+
+        const newSuggestions = suggestions.cloneNode(true);
+        suggestions.parentNode.replaceChild(newSuggestions, suggestions);
+
+        const newTagsList = tagsList.cloneNode(true);
+        tagsList.parentNode.replaceChild(newTagsList, tagsList);
+
+        // Input handler for autocomplete
+        newInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim().toLowerCase();
+            if (value.length < 1) {
+                newSuggestions.innerHTML = '';
+                newSuggestions.style.display = 'none';
+                return;
+            }
+            const allTags = this.getAllUsedTags();
+            const matches = allTags.filter(t => 
+                t.toLowerCase().includes(value) && !this.currentTags.includes(t)
+            ).slice(0, 5);
+            
+            if (matches.length > 0) {
+                newSuggestions.innerHTML = matches.map(t => 
+                    `<div class="tag-suggestion" data-tag="${this.escapeHtml(t)}">${this.escapeHtml(t)}</div>`
+                ).join('');
+                newSuggestions.style.display = 'block';
+            } else {
+                newSuggestions.style.display = 'none';
+            }
+        });
+
+        // Enter key to add tag - auto-save
+        newInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = e.target.value.trim();
+                if (value && !this.currentTags.includes(value)) {
+                    this.currentTags.push(value);
+                    this.renderTagsEditor();
+                    e.target.value = '';
+                    newSuggestions.style.display = 'none';
+                    this.autoSaveTask();
+                }
+            }
+        });
+
+        // Click suggestion - auto-save
+        newSuggestions.addEventListener('click', (e) => {
+            const suggestion = e.target.closest('.tag-suggestion');
+            if (suggestion) {
+                const tag = suggestion.dataset.tag;
+                if (!this.currentTags.includes(tag)) {
+                    this.currentTags.push(tag);
+                    this.renderTagsEditor();
+                    this.autoSaveTask();
+                }
+                newInput.value = '';
+                newSuggestions.style.display = 'none';
+            }
+        });
+
+        // Remove tag - auto-save
+        newTagsList.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.tag-remove');
+            if (removeBtn) {
+                const tag = removeBtn.dataset.tag;
+                this.currentTags = this.currentTags.filter(t => t !== tag);
+                this.renderTagsEditor();
+                this.autoSaveTask();
+            }
+        });
+
+        newInput.addEventListener('blur', () => {
+            setTimeout(() => { newSuggestions.style.display = 'none'; }, 200);
+        });
+    }
+
+    getAllUsedTags() {
+        const tags = new Set();
+        this.tasks.forEach(task => {
+            if (task.tags) task.tags.forEach(t => tags.add(t));
+        });
+        return Array.from(tags).sort();
+    }
+
+    renderStepsEditor() {
+        const stepsList = document.getElementById('task-steps-list');
+        stepsList.innerHTML = this.currentSteps.map((step, idx) => `
+            <div class="step-item" data-index="${idx}" draggable="true">
+                <span class="step-drag-handle"><i class="fas fa-grip-vertical"></i></span>
+                <input type="checkbox" class="step-checkbox" ${step.completed ? 'checked' : ''} data-index="${idx}">
+                <input type="text" class="step-text" value="${this.escapeHtml(step.step || '')}" data-index="${idx}" placeholder="Step description...">
+                <button type="button" class="step-remove" data-index="${idx}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    setupStepsEditor() {
+        const stepsList = document.getElementById('task-steps-list');
+        const addBtn = document.getElementById('add-step-btn');
+
+        const newStepsList = stepsList.cloneNode(true);
+        stepsList.parentNode.replaceChild(newStepsList, stepsList);
+
+        const newAddBtn = addBtn.cloneNode(true);
+        addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+
+        newAddBtn.addEventListener('click', () => {
+            this.currentSteps.push({ step: '', completed: false, completed_at: null });
+            this.renderStepsEditor();
+            const inputs = newStepsList.querySelectorAll('.step-text');
+            if (inputs.length > 0) inputs[inputs.length - 1].focus();
+        });
+
+        newStepsList.addEventListener('input', (e) => {
+            if (e.target.classList.contains('step-text')) {
+                const idx = parseInt(e.target.dataset.index);
+                this.currentSteps[idx].step = e.target.value;
+            }
+        });
+
+        newStepsList.addEventListener('change', (e) => {
+            if (e.target.classList.contains('step-checkbox')) {
+                const idx = parseInt(e.target.dataset.index);
+                this.currentSteps[idx].completed = e.target.checked;
+                this.currentSteps[idx].completed_at = e.target.checked ? new Date().toISOString() : null;
+                this.autoSaveTask();
+            }
+        });
+
+        newStepsList.addEventListener('focusout', (e) => {
+            if (e.target.classList.contains('step-text')) {
+                this.autoSaveTask();
+            }
+        });
+
+        newStepsList.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.step-remove');
+            if (removeBtn) {
+                const idx = parseInt(removeBtn.dataset.index);
+                this.currentSteps.splice(idx, 1);
+                this.renderStepsEditor();
+                this.autoSaveTask();
+            }
+        });
+
+        let draggedIdx = null;
+        newStepsList.addEventListener('dragstart', (e) => {
+            const item = e.target.closest('.step-item');
+            if (item) {
+                draggedIdx = parseInt(item.dataset.index);
+                item.classList.add('dragging');
+            }
+        });
+
+        newStepsList.addEventListener('dragend', (e) => {
+            const item = e.target.closest('.step-item');
+            if (item) item.classList.remove('dragging');
+            draggedIdx = null;
+        });
+
+        newStepsList.addEventListener('dragover', (e) => {
+            if (draggedIdx === null) return;
+            e.preventDefault();
+        });
+
+        newStepsList.addEventListener('drop', (e) => {
+            if (draggedIdx === null) return;
+            e.preventDefault();
+
+            const item = e.target.closest('.step-item');
+            if (!item) return;
+
+            const targetIdx = parseInt(item.dataset.index);
+            if (Number.isNaN(targetIdx) || targetIdx === draggedIdx) return;
+
+            const [moved] = this.currentSteps.splice(draggedIdx, 1);
+            this.currentSteps.splice(targetIdx, 0, moved);
+            this.renderStepsEditor();
+            this.autoSaveTask();
+        });
+    }
+
     hideTaskModal() {
-        document.getElementById('task-modal').classList.remove('show');
+        const modal = document.getElementById('task-modal');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.style.pointerEvents = 'none';
+
+        document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        this.draggedTask = null;
+    }
+
+    async autoSaveTask() {
+        const taskId = document.getElementById('task-id')?.value;
+        if (!taskId) return;
+        
+        const priorityEl = document.getElementById('task-priority-select');
+        const columnIdEl = document.getElementById('task-column-id');
+        if (!priorityEl) return;
+        
+        const columnId = parseInt(
+            columnIdEl?.value || this.currentEditTask?.column_id || '0'
+        );
+        if (!columnId) return;
+        
+        const taskData = {
+            title: document.getElementById('task-title')?.value || '',
+            description: document.getElementById('task-desc')?.value || null,
+            column_id: columnId,
+            tags: this.currentTags || [],
+            priority: priorityEl.value || 'medium',
+            steps: (this.currentSteps || []).filter(s => s.step && s.step.trim())
+        };
+        
+        try {
+            const updatedTask = await this.apiCall(`/tasks/${taskId}`, {
+                method: 'PUT',
+                body: JSON.stringify(taskData)
+            });
+
+            const idx = this.tasks.findIndex(t => t.id === parseInt(taskId));
+            if (idx !== -1) this.tasks[idx] = updatedTask;
+            this.currentEditTask = updatedTask;
+
+            const oldCard = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (oldCard) {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = this.createTaskHTML(updatedTask).trim();
+                const newCard = wrapper.firstElementChild;
+                if (newCard) {
+                    oldCard.replaceWith(newCard);
+                    this.makeDraggable(newCard);
+                }
+            }
+        } catch (error) {
+            Debug.error('Auto-save failed:', error);
+        }
     }
 
     async handleTaskSubmit(e) {
         e.preventDefault();
         
         const formData = new FormData(e.target);
+        const taskId = formData.get('id');
+
         const taskData = {
             title: formData.get('title') || '',
             description: formData.get('description') || null,
             column_id: parseInt(formData.get('column_id'))
         };
-        
-        const taskId = formData.get('id');
+
+        if (taskId) {
+            taskData.tags = this.currentTags || [];
+            taskData.priority = document.getElementById('task-priority-select')?.value || 'medium';
+            taskData.steps = (this.currentSteps || []).filter(s => s.step && s.step.trim());
+        }
         
         try {
             if (taskId) {
-                // Update existing task
                 await this.apiCall(`/tasks/${taskId}`, {
                     method: 'PUT',
                     body: JSON.stringify(taskData)
                 });
                 this.showNotification('Task updated successfully!');
             } else {
-                // Create new task
                 const newTask = await this.apiCall('/tasks/', {
                     method: 'POST',
                     body: JSON.stringify(taskData)
@@ -730,11 +980,9 @@ class KanbanApp {
                 this.tasks.push(newTask);
                 this.showNotification('Task created successfully!');
             }
-            
+
             this.hideTaskModal();
-            // Refresh board data to show the new/updated task
             await this.refreshBoardData();
-            
         } catch (error) {
             Debug.error('Failed to save task:', error);
         }

@@ -189,7 +189,7 @@ GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback
 # JWT Configuration
 JWT_SECRET_KEY=your_secret_key
 JWT_ALGORITHM=HS256
-JWT_EXPIRATION_HOURS=24
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
 # Session Configuration
 SESSION_TIMEOUT_HOURS=168  # 1 week

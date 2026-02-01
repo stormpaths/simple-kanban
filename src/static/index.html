@@ -14,8 +14,12 @@
 </head>
 <body>
     <div class="app">
+        <div id="auth-loading" class="auth-loading">
+            <div class="spinner"></div>
+            <p>Checking session...</p>
+        </div>
         <!-- Authentication Screen -->
-        <div id="auth-screen" class="auth-screen">
+        <div id="auth-screen" class="auth-screen" style="display: none;">
             <div class="auth-container">
                 <div class="auth-header">
                     <div class="auth-header-content">
@@ -285,6 +289,7 @@
     <div id="task-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
+                <span></span>
                 <button class="modal-close" id="task-modal-close">
                     <i class="fas fa-times"></i>
                 </button>
@@ -301,22 +306,38 @@
                 
                 <!-- Task Details Section (shown in edit mode) -->
                 <div id="task-details-section" class="task-details-section" style="display: none;">
-                    <!-- Tags -->
+                    <!-- Tags (editable) -->
                     <div class="detail-row">
                         <label><i class="fas fa-tags"></i> Tags</label>
-                        <div id="task-detail-tags" class="detail-tags"></div>
+                        <div class="tags-editor">
+                            <div id="task-tags-list" class="tags-list"></div>
+                            <div class="tag-input-wrapper">
+                                <input type="text" id="tag-input" class="tag-input" placeholder="Add tag..." autocomplete="off">
+                                <div id="tag-suggestions" class="tag-suggestions"></div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Priority -->
+                    <!-- Priority (editable dropdown) -->
                     <div class="detail-row">
                         <label><i class="fas fa-flag"></i> Priority</label>
-                        <span id="task-detail-priority" class="task-priority"></span>
+                        <select id="task-priority-select" class="priority-select">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
                     </div>
                     
-                    <!-- Steps -->
+                    <!-- Steps (editable with drag/drop) -->
                     <div class="detail-row detail-steps-section">
                         <label><i class="fas fa-tasks"></i> Steps</label>
-                        <div id="task-detail-steps" class="detail-steps"></div>
+                        <div class="steps-editor">
+                            <div id="task-steps-list" class="steps-list-editor"></div>
+                            <button type="button" id="add-step-btn" class="btn btn-small btn-secondary">
+                                <i class="fas fa-plus"></i> Add Step
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Results -->
