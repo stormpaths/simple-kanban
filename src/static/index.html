@@ -298,6 +298,40 @@
                     <label for="task-desc">Description (optional)</label>
                     <textarea id="task-desc" name="description" placeholder="Enter task description"></textarea>
                 </div>
+                
+                <!-- Task Details Section (shown in edit mode) -->
+                <div id="task-details-section" class="task-details-section" style="display: none;">
+                    <!-- Tags -->
+                    <div class="detail-row">
+                        <label><i class="fas fa-tags"></i> Tags</label>
+                        <div id="task-detail-tags" class="detail-tags"></div>
+                    </div>
+                    
+                    <!-- Priority -->
+                    <div class="detail-row">
+                        <label><i class="fas fa-flag"></i> Priority</label>
+                        <span id="task-detail-priority" class="task-priority"></span>
+                    </div>
+                    
+                    <!-- Steps -->
+                    <div class="detail-row detail-steps-section">
+                        <label><i class="fas fa-tasks"></i> Steps</label>
+                        <div id="task-detail-steps" class="detail-steps"></div>
+                    </div>
+                    
+                    <!-- Results -->
+                    <div class="detail-row detail-results-section">
+                        <label><i class="fas fa-clipboard-check"></i> Results</label>
+                        <div id="task-detail-results" class="detail-results"></div>
+                    </div>
+                    
+                    <!-- Metadata -->
+                    <div class="detail-row detail-metadata-section">
+                        <label><i class="fas fa-info-circle"></i> Metadata</label>
+                        <div id="task-detail-metadata" class="detail-metadata"></div>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label>Comments</label>
                     <div id="comments-section">

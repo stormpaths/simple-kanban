@@ -1121,6 +1121,260 @@ body {
     background: #fef2f2;
 }
 
+/* Task Header with Priority and Results */
+.task-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.task-header .task-title {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Priority Badges */
+.task-priority {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.priority-low {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.priority-high {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.priority-critical {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Results Indicator */
+.task-result {
+    font-size: 0.9rem;
+    cursor: help;
+}
+
+.result-success {
+    color: #16a34a;
+}
+
+.result-failed {
+    color: #dc2626;
+}
+
+.result-partial {
+    color: #d97706;
+}
+
+/* Tags */
+.task-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.task-tag {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+}
+
+/* Steps Progress */
+.task-steps {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.steps-progress {
+    flex: 1;
+    height: 4px;
+    background: var(--bg-primary);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.steps-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.steps-count {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Task Details Section in Modal */
+.task-details-section {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row > label {
+    min-width: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.detail-row > label i {
+    width: 14px;
+    text-align: center;
+}
+
+.detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.no-data {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* Steps List in Modal */
+.detail-steps {
+    flex: 1;
+}
+
+.steps-summary {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.steps-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.steps-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.steps-list li.completed {
+    color: #16a34a;
+}
+
+.steps-list li.completed i {
+    color: #16a34a;
+}
+
+.steps-list li i {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.step-time {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+/* Results in Modal */
+.detail-results {
+    flex: 1;
+}
+
+.results-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    margin-bottom: 0.5rem;
+}
+
+.results-header.result-success {
+    color: #16a34a;
+}
+
+.results-header.result-failed {
+    color: #dc2626;
+}
+
+.results-header.result-partial {
+    color: #d97706;
+}
+
+.results-summary {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.results-output {
+    font-size: 0.75rem;
+    background: var(--bg-secondary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    max-height: 150px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Metadata in Modal */
+.detail-metadata {
+    flex: 1;
+}
+
+.metadata-json {
+    font-size: 0.7rem;
+    background: var(--bg-secondary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    max-height: 100px;
+}
+
 /* Modals */
 .modal {
     display: none;

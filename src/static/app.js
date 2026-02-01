@@ -404,10 +404,47 @@ class KanbanApp {
         const createdDate = task.created_at ? new Date(task.created_at).toLocaleDateString() : 'Recently';
         const daysOpen = this.calculateDaysOpen(task.created_at);
         
+        // Build tags HTML
+        const tagsHTML = task.tags && task.tags.length > 0 
+            ? `<div class="task-tags">${task.tags.map(tag => `<span class="task-tag">${this.escapeHtml(tag)}</span>`).join('')}</div>` 
+            : '';
+        
+        // Build priority badge
+        const priorityHTML = task.priority && task.priority !== 'medium'
+            ? `<span class="task-priority priority-${task.priority}">${task.priority}</span>`
+            : '';
+        
+        // Build steps progress
+        let stepsHTML = '';
+        if (task.steps && task.steps.length > 0) {
+            const completed = task.steps.filter(s => s.completed).length;
+            const total = task.steps.length;
+            const percent = Math.round((completed / total) * 100);
+            stepsHTML = `
+                <div class="task-steps">
+                    <div class="steps-progress">
+                        <div class="steps-bar" style="width: ${percent}%"></div>
+                    </div>
+                    <span class="steps-count">${completed}/${total}</span>
+                </div>`;
+        }
+        
+        // Build results indicator
+        const resultsHTML = task.results && task.results.status
+            ? `<span class="task-result result-${task.results.status}" title="${this.escapeHtml(task.results.summary || '')}">
+                <i class="fas fa-${task.results.status === 'success' ? 'check-circle' : task.results.status === 'failed' ? 'times-circle' : 'exclamation-circle'}"></i>
+               </span>`
+            : '';
+        
         return `
-            <div class="task-card clickable" draggable="true" data-task-id="${task.id}">
-                <div class="task-title">${this.escapeHtml(task.title)}</div>
+            <div class="task-card clickable" draggable="true" data-task-id="${task.id}" data-priority="${task.priority || 'medium'}">
+                <div class="task-header">
+                    <div class="task-title">${this.escapeHtml(task.title)}</div>
+                    ${priorityHTML}${resultsHTML}
+                </div>
+                ${tagsHTML}
                 ${task.description ? `<div class="task-description">${this.escapeHtml(task.description)}</div>` : ''}
+                ${stepsHTML}
                 <div class="task-meta">
                     <span>Created: ${createdDate}</span>
                     <span class="days-open ${this.getDaysOpenClass(daysOpen)}">${daysOpen}</span>
@@ -554,6 +591,7 @@ class KanbanApp {
         const modal = document.getElementById('task-modal');
         const form = document.getElementById('task-form');
         const submitBtn = document.getElementById('task-submit');
+        const detailsSection = document.getElementById('task-details-section');
         
         if (task) {
             // Edit mode
@@ -562,6 +600,10 @@ class KanbanApp {
             document.getElementById('task-desc').value = task.description || '';
             document.getElementById('task-id').value = task.id;
             document.getElementById('task-column-id').value = task.column_id;
+            
+            // Show task details section and populate it
+            this.populateTaskDetails(task);
+            detailsSection.style.display = 'block';
             
             // Load comments for this task
             this.loadTaskComments(task.id);
@@ -572,6 +614,9 @@ class KanbanApp {
             document.getElementById('task-column-id').value = columnId;
             document.getElementById('task-id').value = '';
             
+            // Hide task details section
+            detailsSection.style.display = 'none';
+            
             // Clear comments section
             this.clearComments();
         }
@@ -580,6 +625,76 @@ class KanbanApp {
         this.setupCommentForm();
         
         modal.classList.add('show');
+    }
+    
+    populateTaskDetails(task) {
+        // Tags
+        const tagsEl = document.getElementById('task-detail-tags');
+        if (task.tags && task.tags.length > 0) {
+            tagsEl.innerHTML = task.tags.map(tag => `<span class="task-tag">${this.escapeHtml(tag)}</span>`).join('');
+            tagsEl.parentElement.style.display = 'flex';
+        } else {
+            tagsEl.innerHTML = '<span class="no-data">No tags</span>';
+            tagsEl.parentElement.style.display = 'none';
+        }
+        
+        // Priority
+        const priorityEl = document.getElementById('task-detail-priority');
+        const priority = task.priority || 'medium';
+        priorityEl.textContent = priority;
+        priorityEl.className = `task-priority priority-${priority}`;
+        
+        // Steps
+        const stepsEl = document.getElementById('task-detail-steps');
+        const stepsSection = document.querySelector('.detail-steps-section');
+        if (task.steps && task.steps.length > 0) {
+            const completed = task.steps.filter(s => s.completed).length;
+            stepsEl.innerHTML = `
+                <div class="steps-summary">${completed}/${task.steps.length} completed</div>
+                <ul class="steps-list">
+                    ${task.steps.map(step => `
+                        <li class="${step.completed ? 'completed' : ''}">
+                            <i class="fas fa-${step.completed ? 'check-circle' : 'circle'}"></i>
+                            ${this.escapeHtml(step.step || step.name || 'Step')}
+                            ${step.completed_at ? `<span class="step-time">${new Date(step.completed_at).toLocaleDateString()}</span>` : ''}
+                        </li>
+                    `).join('')}
+                </ul>`;
+            stepsSection.style.display = 'flex';
+        } else {
+            stepsEl.innerHTML = '';
+            stepsSection.style.display = 'none';
+        }
+        
+        // Results
+        const resultsEl = document.getElementById('task-detail-results');
+        const resultsSection = document.querySelector('.detail-results-section');
+        if (task.results && Object.keys(task.results).length > 0) {
+            const statusIcon = task.results.status === 'success' ? 'check-circle' : 
+                              task.results.status === 'failed' ? 'times-circle' : 'exclamation-circle';
+            resultsEl.innerHTML = `
+                <div class="results-header result-${task.results.status || 'pending'}">
+                    <i class="fas fa-${statusIcon}"></i>
+                    <span>${task.results.status || 'Pending'}</span>
+                </div>
+                ${task.results.summary ? `<div class="results-summary">${this.escapeHtml(task.results.summary)}</div>` : ''}
+                ${task.results.output ? `<pre class="results-output">${this.escapeHtml(task.results.output)}</pre>` : ''}`;
+            resultsSection.style.display = 'flex';
+        } else {
+            resultsEl.innerHTML = '';
+            resultsSection.style.display = 'none';
+        }
+        
+        // Metadata
+        const metadataEl = document.getElementById('task-detail-metadata');
+        const metadataSection = document.querySelector('.detail-metadata-section');
+        if (task.task_metadata && Object.keys(task.task_metadata).length > 0) {
+            metadataEl.innerHTML = `<pre class="metadata-json">${JSON.stringify(task.task_metadata, null, 2)}</pre>`;
+            metadataSection.style.display = 'flex';
+        } else {
+            metadataEl.innerHTML = '';
+            metadataSection.style.display = 'none';
+        }
     }
 
     hideTaskModal() {
