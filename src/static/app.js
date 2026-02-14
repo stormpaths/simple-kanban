@@ -12,6 +12,12 @@ class KanbanApp {
         this.tasks = [];
         this.draggedTask = null;
         this.authManager = window.authManager;
+        
+        // WebSocket for real-time updates
+        this.ws = null;
+        this.wsReconnectAttempts = 0;
+        this.wsMaxReconnectAttempts = 5;
+        this.wsReconnectDelay = 1000;
     }
 
     async init() {
@@ -250,6 +256,9 @@ class KanbanApp {
             // Save selected board to localStorage
             localStorage.setItem('selectedBoardId', boardId);
             Debug.log('Saved selectedBoardId to localStorage');
+            
+            // Connect to WebSocket for real-time updates
+            this.connectWebSocket(boardId);
             
             // Process the board data we already have
             Debug.log('Processing board data...');
@@ -1431,6 +1440,271 @@ class KanbanApp {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // WebSocket Methods for Real-Time Updates
+    connectWebSocket(boardId) {
+        // Close existing connection if any
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        
+        if (!boardId) return;
+        
+        // Build WebSocket URL
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        let wsUrl = `${protocol}//${host}/ws/board/${boardId}`;
+        
+        // Add token if available
+        if (this.authManager && this.authManager.token) {
+            wsUrl += `?token=${encodeURIComponent(this.authManager.token)}`;
+        }
+        
+        Debug.log('Connecting to WebSocket:', wsUrl);
+        
+        try {
+            this.ws = new WebSocket(wsUrl);
+            
+            this.ws.onopen = () => {
+                Debug.log('WebSocket connected for board:', boardId);
+                this.wsReconnectAttempts = 0;
+                this.showNotification('Real-time updates enabled', 'success');
+            };
+            
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    Debug.log('WebSocket message received:', data);
+                    this.handleWebSocketEvent(data);
+                } catch (e) {
+                    Debug.error('Failed to parse WebSocket message:', e);
+                }
+            };
+            
+            this.ws.onclose = (event) => {
+                Debug.log('WebSocket closed:', event.code, event.reason);
+                this.ws = null;
+                
+                // Attempt reconnection if not a clean close
+                if (event.code !== 1000 && this.currentBoard) {
+                    this.attemptWebSocketReconnect();
+                }
+            };
+            
+            this.ws.onerror = (error) => {
+                Debug.error('WebSocket error:', error);
+            };
+            
+        } catch (error) {
+            Debug.error('Failed to create WebSocket:', error);
+        }
+    }
+    
+    attemptWebSocketReconnect() {
+        if (this.wsReconnectAttempts >= this.wsMaxReconnectAttempts) {
+            Debug.log('Max WebSocket reconnect attempts reached');
+            return;
+        }
+        
+        this.wsReconnectAttempts++;
+        const delay = this.wsReconnectDelay * Math.pow(2, this.wsReconnectAttempts - 1);
+        
+        Debug.log(`Attempting WebSocket reconnect in ${delay}ms (attempt ${this.wsReconnectAttempts})`);
+        
+        setTimeout(() => {
+            if (this.currentBoard && !this.ws) {
+                this.connectWebSocket(this.currentBoard.id);
+            }
+        }, delay);
+    }
+    
+    disconnectWebSocket() {
+        if (this.ws) {
+            this.ws.close(1000, 'User disconnected');
+            this.ws = null;
+        }
+    }
+    
+    handleWebSocketEvent(event) {
+        const { event_type, data, user_id } = event;
+        
+        // Skip updates triggered by current user (already reflected in UI)
+        // Uncomment below to ignore own updates:
+        // if (this.authManager && user_id === this.authManager.userId) return;
+        
+        switch (event_type) {
+            case 'connected':
+                Debug.log('WebSocket connection confirmed');
+                break;
+                
+            case 'task_created':
+                this.handleTaskCreated(data);
+                break;
+                
+            case 'task_updated':
+                this.handleTaskUpdated(data);
+                break;
+                
+            case 'task_moved':
+                this.handleTaskMoved(data);
+                break;
+                
+            case 'task_deleted':
+                this.handleTaskDeleted(data);
+                break;
+                
+            case 'column_created':
+            case 'column_updated':
+            case 'column_deleted':
+            case 'board_updated':
+                // For column/board changes, do a full refresh
+                this.refreshBoardData();
+                break;
+                
+            default:
+                Debug.log('Unknown WebSocket event:', event_type);
+        }
+    }
+    
+    handleTaskCreated(taskData) {
+        Debug.log('Handling task_created:', taskData);
+        
+        // Check if task already exists (avoid duplicates)
+        if (this.tasks.find(t => t.id === taskData.id)) {
+            Debug.log('Task already exists, skipping');
+            return;
+        }
+        
+        // Add to local tasks array
+        this.tasks.push(taskData);
+        
+        // Find the column and add the task card
+        const tasksList = document.querySelector(`.tasks-list[data-column-id="${taskData.column_id}"]`);
+        if (tasksList) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = this.createTaskHTML(taskData).trim();
+            const taskCard = wrapper.firstElementChild;
+            if (taskCard) {
+                tasksList.appendChild(taskCard);
+                this.makeDraggable(taskCard);
+                
+                // Update task count
+                this.updateColumnTaskCount(taskData.column_id);
+                
+                // Highlight new task briefly
+                taskCard.classList.add('task-highlight');
+                setTimeout(() => taskCard.classList.remove('task-highlight'), 2000);
+            }
+        }
+    }
+    
+    handleTaskUpdated(taskData) {
+        Debug.log('Handling task_updated:', taskData);
+        
+        // Update local tasks array
+        const taskIndex = this.tasks.findIndex(t => t.id === taskData.id);
+        if (taskIndex !== -1) {
+            this.tasks[taskIndex] = taskData;
+        }
+        
+        // Update the task card in DOM
+        const oldCard = document.querySelector(`.task-card[data-task-id="${taskData.id}"]`);
+        if (oldCard) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = this.createTaskHTML(taskData).trim();
+            const newCard = wrapper.firstElementChild;
+            if (newCard) {
+                oldCard.replaceWith(newCard);
+                this.makeDraggable(newCard);
+                
+                // Highlight updated task briefly
+                newCard.classList.add('task-highlight');
+                setTimeout(() => newCard.classList.remove('task-highlight'), 2000);
+            }
+        }
+        
+        // Update edit modal if this task is being edited
+        const editingTaskId = document.getElementById('task-id')?.value;
+        if (editingTaskId && parseInt(editingTaskId) === taskData.id) {
+            // Update the currentEditTask reference
+            this.currentEditTask = taskData;
+        }
+    }
+    
+    handleTaskMoved(taskData) {
+        Debug.log('Handling task_moved:', taskData);
+        
+        const oldColumnId = taskData.old_column_id;
+        const newColumnId = taskData.column_id;
+        
+        // Update local tasks array
+        const taskIndex = this.tasks.findIndex(t => t.id === taskData.id);
+        if (taskIndex !== -1) {
+            this.tasks[taskIndex] = taskData;
+        }
+        
+        // Move the task card in DOM
+        const taskCard = document.querySelector(`.task-card[data-task-id="${taskData.id}"]`);
+        const newTasksList = document.querySelector(`.tasks-list[data-column-id="${newColumnId}"]`);
+        
+        if (taskCard && newTasksList) {
+            // Update card content
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = this.createTaskHTML(taskData).trim();
+            const newCard = wrapper.firstElementChild;
+            
+            if (newCard) {
+                taskCard.replaceWith(newCard);
+                newTasksList.appendChild(newCard);
+                this.makeDraggable(newCard);
+                
+                // Update task counts for both columns
+                this.updateColumnTaskCount(oldColumnId);
+                this.updateColumnTaskCount(newColumnId);
+                
+                // Highlight moved task briefly
+                newCard.classList.add('task-highlight');
+                setTimeout(() => newCard.classList.remove('task-highlight'), 2000);
+            }
+        }
+    }
+    
+    handleTaskDeleted(data) {
+        Debug.log('Handling task_deleted:', data);
+        
+        const { task_id, column_id } = data;
+        
+        // Remove from local tasks array
+        this.tasks = this.tasks.filter(t => t.id !== task_id);
+        
+        // Remove from DOM
+        const taskCard = document.querySelector(`.task-card[data-task-id="${task_id}"]`);
+        if (taskCard) {
+            taskCard.remove();
+            
+            // Update task count
+            this.updateColumnTaskCount(column_id);
+        }
+        
+        // Close edit modal if this task was being edited
+        const editingTaskId = document.getElementById('task-id')?.value;
+        if (editingTaskId && parseInt(editingTaskId) === task_id) {
+            this.hideTaskModal();
+            this.showNotification('Task was deleted by another user', 'info');
+        }
+    }
+    
+    updateColumnTaskCount(columnId) {
+        const column = document.querySelector(`.column[data-column-id="${columnId}"]`);
+        if (column) {
+            const taskCount = column.querySelectorAll('.task-card').length;
+            const countSpan = column.querySelector('.task-count');
+            if (countSpan) {
+                countSpan.textContent = taskCount;
+            }
+        }
     }
 }
 

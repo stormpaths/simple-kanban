@@ -15,8 +15,27 @@ from ..database import get_db_session
 from ..models import Task, Column, Board, User
 from ..schemas import TaskCreate, TaskUpdate, TaskMove, TaskResponse
 from ..auth.dependencies import get_current_user, get_user_from_api_key_or_jwt
+from ..websocket import get_connection_manager, BoardEvent, EventType
 
 logger = logging.getLogger(__name__)
+
+
+def task_to_dict(task: Task) -> dict:
+    """Convert a Task model to a dictionary for broadcasting."""
+    return {
+        "id": task.id,
+        "title": task.title,
+        "description": task.description,
+        "column_id": task.column_id,
+        "position": task.position,
+        "tags": task.tags,
+        "task_metadata": task.task_metadata,
+        "priority": task.priority,
+        "steps": task.steps,
+        "results": task.results,
+        "created_at": task.created_at.isoformat() if task.created_at else None,
+        "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+    }
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -70,6 +89,20 @@ async def create_task(
         await db.refresh(db_task)
 
         logger.info(f"Successfully created task {db_task.id} for user {user_id}")
+        
+        # Broadcast task creation event
+        try:
+            ws_manager = get_connection_manager()
+            event = BoardEvent(
+                event_type=EventType.TASK_CREATED,
+                board_id=column.board_id,
+                data=task_to_dict(db_task),
+                user_id=user_id,
+            )
+            await ws_manager.broadcast_event(event)
+        except Exception as e:
+            logger.warning(f"Failed to broadcast task creation: {e}")
+        
         return db_task
 
     except HTTPException:
@@ -168,6 +201,24 @@ async def update_task(
     task.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(task)
+    
+    # Broadcast task update event
+    try:
+        # Get board_id from column
+        result = await db.execute(select(Column).where(Column.id == task.column_id))
+        column = result.scalar_one_or_none()
+        if column:
+            ws_manager = get_connection_manager()
+            event = BoardEvent(
+                event_type=EventType.TASK_UPDATED,
+                board_id=column.board_id,
+                data=task_to_dict(task),
+                user_id=current_user.id,
+            )
+            await ws_manager.broadcast_event(event)
+    except Exception as e:
+        logger.warning(f"Failed to broadcast task update: {e}")
+    
     return task
 
 
@@ -247,6 +298,24 @@ async def move_task(
 
     await db.commit()
     await db.refresh(task)
+    
+    # Broadcast task move event
+    try:
+        ws_manager = get_connection_manager()
+        event = BoardEvent(
+            event_type=EventType.TASK_MOVED,
+            board_id=target_column.board_id,
+            data={
+                **task_to_dict(task),
+                "old_column_id": old_column_id,
+                "old_position": old_position,
+            },
+            user_id=current_user.id,
+        )
+        await ws_manager.broadcast_event(event)
+    except Exception as e:
+        logger.warning(f"Failed to broadcast task move: {e}")
+    
     return task
 
 
@@ -279,3 +348,20 @@ async def delete_task(
         t.position -= 1
 
     await db.commit()
+    
+    # Broadcast task deletion event
+    try:
+        # Get board_id from column
+        result = await db.execute(select(Column).where(Column.id == column_id))
+        column = result.scalar_one_or_none()
+        if column:
+            ws_manager = get_connection_manager()
+            event = BoardEvent(
+                event_type=EventType.TASK_DELETED,
+                board_id=column.board_id,
+                data={"task_id": task_id, "column_id": column_id},
+                user_id=current_user.id,
+            )
+            await ws_manager.broadcast_event(event)
+    except Exception as e:
+        logger.warning(f"Failed to broadcast task deletion: {e}")

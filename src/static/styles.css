@@ -2816,3 +2816,55 @@ form {
         grid-template-columns: 1fr;
     }
 }
+
+/* WebSocket Real-Time Update Animations */
+.task-highlight {
+    animation: taskHighlight 2s ease-out;
+}
+
+@keyframes taskHighlight {
+    0% {
+        box-shadow: 0 0 0 3px var(--accent-primary), 0 4px 12px var(--shadow-medium);
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 0 0 2px var(--accent-primary), 0 2px 8px var(--shadow-light);
+        transform: scale(1.01);
+    }
+    100% {
+        box-shadow: 0 2px 8px var(--shadow-light);
+        transform: scale(1);
+    }
+}
+
+/* WebSocket connection status indicator */
+.ws-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: 1rem;
+}
+
+.ws-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #10b981;
+    animation: pulse 2s infinite;
+}
+
+.ws-status-dot.disconnected {
+    background-color: #ef4444;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}

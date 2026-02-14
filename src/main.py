@@ -5,7 +5,7 @@ This module provides the main FastAPI application with health checks,
 basic routing, and error handling.
 """
 
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import FastAPI, HTTPException, Request, Depends, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -38,6 +38,7 @@ from .api import (
     api_keys,
 )
 from .auth.dependencies import require_api_scope
+from .websocket import get_connection_manager
 
 # Configure logging
 log_level = logging.DEBUG if settings.debug else logging.INFO
@@ -135,6 +136,21 @@ async def startup_event():
     run_sessions_migration()
     logger.info("Sessions migrations completed")
 
+    # Start WebSocket connection manager
+    logger.info("Starting WebSocket connection manager...")
+    ws_manager = get_connection_manager()
+    await ws_manager.start()
+    logger.info("WebSocket connection manager started")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources on shutdown."""
+    logger.info("Stopping WebSocket connection manager...")
+    ws_manager = get_connection_manager()
+    await ws_manager.stop()
+    logger.info("WebSocket connection manager stopped")
+
 
 @app.get("/")
 async def root():
@@ -185,6 +201,53 @@ async def metrics():
         "uptime_seconds": 0,
         "memory_usage_mb": 0,
     }
+
+
+@app.websocket("/ws/board/{board_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    board_id: int,
+    token: str = Query(None),
+):
+    """
+    WebSocket endpoint for real-time board updates.
+    
+    Clients connect to receive live updates when tasks, columns,
+    or other board data changes. Supports optional JWT token
+    authentication via query parameter.
+    
+    Args:
+        websocket: The WebSocket connection
+        board_id: ID of the board to subscribe to
+        token: Optional JWT token for authentication
+    """
+    ws_manager = get_connection_manager()
+    user_id = None
+    
+    # Optional: Validate token if provided
+    if token:
+        try:
+            from .auth.jwt import verify_token
+            payload = verify_token(token)
+            user_id = payload.get("user_id")
+        except Exception as e:
+            logger.warning(f"WebSocket token validation failed: {e}")
+            # Continue without user_id - anonymous connection
+    
+    await ws_manager.connect(websocket, board_id, user_id)
+    
+    try:
+        while True:
+            # Keep connection alive and handle any client messages
+            data = await websocket.receive_text()
+            # Could handle client-sent messages here if needed
+            logger.debug(f"Received WebSocket message: {data}")
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket, board_id)
+        logger.info(f"WebSocket disconnected: board_id={board_id}")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        ws_manager.disconnect(websocket, board_id)
 
 
 @app.get("/docs")
