@@ -20,7 +20,7 @@ from ..schemas.task_comment import (
     TaskCommentResponse,
     TaskCommentListResponse,
 )
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, get_user_from_api_key_or_jwt
 
 router = APIRouter(prefix="/tasks", tags=["task-comments"])
 
@@ -41,7 +41,7 @@ async def _can_access_task(db: AsyncSession, user: User, task_id: int) -> bool:
 async def get_task_comments(
     task_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Get all comments for a task."""
     if not await _can_access_task(db, current_user, task_id):
@@ -79,7 +79,7 @@ async def create_task_comment(
     task_id: int,
     comment_data: TaskCommentCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Create a new comment on a task."""
     if not await _can_access_task(db, current_user, task_id):
@@ -116,7 +116,7 @@ async def update_task_comment(
     comment_id: int,
     comment_data: TaskCommentUpdate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Update a task comment (only by the author)."""
     result = await db.execute(
@@ -158,7 +158,7 @@ async def update_task_comment(
 async def delete_task_comment(
     comment_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_user_from_api_key_or_jwt),
 ):
     """Delete a task comment (only by the author)."""
     result = await db.execute(select(TaskComment).where(TaskComment.id == comment_id))
