@@ -988,17 +988,23 @@ class KanbanApp {
                     body: JSON.stringify(taskData)
                 });
                 this.showNotification('Task updated successfully!');
+                this.hideTaskModal();
+                await this.refreshBoardData();
             } else {
+                // Create new task
                 const newTask = await this.apiCall('/tasks/', {
                     method: 'POST',
                     body: JSON.stringify(taskData)
                 });
                 this.tasks.push(newTask);
-                this.showNotification('Task created successfully!');
-            }
+                this.showNotification('Task created! Now you can add tags, steps, and comments.');
 
-            this.hideTaskModal();
-            await this.refreshBoardData();
+                // Refresh board data to get the new task
+                await this.refreshBoardData();
+
+                // Immediately reopen in edit mode so user can add details
+                this.showTaskModal(null, newTask);
+            }
         } catch (error) {
             Debug.error('Failed to save task:', error);
         }
