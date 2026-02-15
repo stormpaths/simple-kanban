@@ -1056,17 +1056,19 @@ class KanbanApp {
         addBtn.replaceWith(addBtn.cloneNode(true));
         const newAddBtn = document.getElementById('add-comment-btn');
         
-        newAddBtn.addEventListener('click', async () => {
+        newAddBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const content = newCommentTextarea.value.trim();
             if (!content) return;
             if (content.length > 2000) {
                 alert('Comment is too long. Maximum 2000 characters allowed.');
                 return;
             }
-            
+
             const taskId = document.getElementById('task-id').value;
             if (!taskId) return;
-            
+
             try {
                 await this.apiCall(`/tasks/${taskId}/comments`, {
                     method: 'POST',
@@ -1075,7 +1077,7 @@ class KanbanApp {
                         task_id: parseInt(taskId)
                     })
                 });
-                
+
                 newCommentTextarea.value = '';
                 await this.loadTaskComments(taskId);
                 this.showNotification('Comment added successfully!');
@@ -1095,16 +1097,20 @@ class KanbanApp {
 
     setupCommentActions() {
         const commentsList = document.getElementById('comments-list');
-        
+
         commentsList.addEventListener('click', async (e) => {
             const commentItem = e.target.closest('.comment-item');
             if (!commentItem) return;
-            
+
             const commentId = commentItem.dataset.commentId;
-            
+
             if (e.target.closest('.edit-comment')) {
+                e.preventDefault();
+                e.stopPropagation();
                 await this.editComment(commentId, commentItem);
             } else if (e.target.closest('.delete-comment')) {
+                e.preventDefault();
+                e.stopPropagation();
                 await this.deleteComment(commentId);
             }
         });
@@ -1129,16 +1135,18 @@ class KanbanApp {
         
         textarea.focus();
         
-        saveBtn.addEventListener('click', async () => {
+        saveBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const newContent = textarea.value.trim();
             if (!newContent) return;
-            
+
             try {
                 await this.apiCall(`/tasks/comments/${commentId}`, {
                     method: 'PUT',
                     body: JSON.stringify({ content: newContent })
                 });
-                
+
                 const taskId = document.getElementById('task-id').value;
                 await this.loadTaskComments(taskId);
                 this.showNotification('Comment updated successfully!');
@@ -1147,8 +1155,10 @@ class KanbanApp {
                 this.showNotification('Failed to update comment. Please try again.', 'error');
             }
         });
-        
-        cancelBtn.addEventListener('click', () => {
+
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             contentDiv.innerHTML = this.escapeHtml(originalContent);
         });
     }
