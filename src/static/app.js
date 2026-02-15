@@ -601,10 +601,11 @@ class KanbanApp {
         const form = document.getElementById('task-form');
         const submitBtn = document.getElementById('task-submit');
         const detailsSection = document.getElementById('task-details-section');
+        const modalHeader = modal.querySelector('.modal-header span');
 
         modal.style.display = '';
         modal.style.pointerEvents = '';
-        
+
         if (task) {
             // Edit mode
             submitBtn.textContent = 'Update Task';
@@ -612,11 +613,14 @@ class KanbanApp {
             document.getElementById('task-desc').value = task.description || '';
             document.getElementById('task-id').value = task.id;
             document.getElementById('task-column-id').value = task.column_id;
-            
+
+            // Set modal header with task ID
+            modalHeader.innerHTML = `<span class="modal-task-id">Task #${task.id}</span>`;
+
             // Show task details section and populate it
             this.populateTaskDetails(task);
             detailsSection.style.display = 'block';
-            
+
             // Load comments for this task
             this.loadTaskComments(task.id);
         } else {
@@ -625,10 +629,13 @@ class KanbanApp {
             form.reset();
             document.getElementById('task-column-id').value = columnId;
             document.getElementById('task-id').value = '';
-            
+
+            // Clear modal header
+            modalHeader.innerHTML = '';
+
             // Hide task details section
             detailsSection.style.display = 'none';
-            
+
             // Clear comments section
             this.clearComments();
         }

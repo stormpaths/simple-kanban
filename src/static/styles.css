@@ -1610,8 +1610,8 @@ body {
     background: var(--bg-tertiary);
     border-radius: 12px;
     padding: 0;
-    max-width: 700px;
-    width: 90%;
+    max-width: 1400px;
+    width: 95%;
     max-height: 90vh;
     overflow-y: auto;
     animation: slideIn 0.2s ease-out;
@@ -1638,6 +1638,14 @@ body {
 .modal-header h3 {
     font-size: 1.25rem;
     color: var(--text-tertiary);
+}
+
+.modal-task-id {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 1.1rem;
+    font-family: 'Courier New', monospace;
+    opacity: 0.8;
 }
 
 .modal-close {
