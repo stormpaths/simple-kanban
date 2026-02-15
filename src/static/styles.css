@@ -1062,6 +1062,15 @@ body {
     line-height: 1.4;
 }
 
+.task-id {
+    font-weight: 600;
+    color: var(--primary);
+    opacity: 0.7;
+    font-size: 0.85em;
+    margin-right: 0.5rem;
+    font-family: 'Courier New', monospace;
+}
+
 .task-description {
     color: var(--text-secondary);
     font-size: 0.875rem;

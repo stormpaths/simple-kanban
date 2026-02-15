@@ -448,7 +448,7 @@ class KanbanApp {
         return `
             <div class="task-card clickable" draggable="true" data-task-id="${task.id}" data-priority="${task.priority || 'medium'}">
                 <div class="task-header">
-                    <div class="task-title">${this.escapeHtml(task.title)}</div>
+                    <div class="task-title"><span class="task-id">#${task.id}</span> ${this.escapeHtml(task.title)}</div>
                     ${priorityHTML}${resultsHTML}
                 </div>
                 ${tagsHTML}
